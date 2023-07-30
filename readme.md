@@ -229,6 +229,34 @@ defaults to `False`). That will make the control loop start controlling the
 actual device.
 
 ---
+## Add Stability Preserving Supervisor
+The next step is to add the supervisor to the system. This supervisor acts as
+proposed in the paper and replaces the PID parameters with fall-back ones if the
+system appears to be unstable.
+
+From reading the paper, the proposed algorithm uses the accumulated error as the
+inverse reward. Also, the proposed supervisor algorithm compares the _running_
+squared error $RR(t)$ in an episode with the _total_ squared error $R_{bmk}$. We
+expected both to be either total or running, but one and the other. In the code
+below, we follow the same pattern: comparing a running error with a
+total-for-an-episode benchmark.
+
+The authors of the the paper propose to base this decision on the cumulative
+error for an episode, but that is useful only for episodes where the setpoint
+$r(t)$ does not change. Changing setpoints would punish the algorithm for
+something it has no control over. The paper solves this by assuming the setpoint
+does not change.
+
+<p align="center" width="100%">
+    <img width="50%" src="images/state-diagram.png"> 
+</p>
+
+An alternative might have been to have the baseline controller run alongside the
+operational controller and have the supervisor switch between the two. The
+problem with that is that the supervisor cannot determine $y(t)'$ for the stable
+controller, because it's $u(t)'$ is not passed through the plant.
+
+---
 ## Autotuner
 With the supervisor ready to take over in case the control loop becomes
 unstable, we turn out attention to the auto tuning. As the paper has, we will
