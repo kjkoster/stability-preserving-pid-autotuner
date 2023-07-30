@@ -248,13 +248,21 @@ something it has no control over. The paper solves this by assuming the setpoint
 does not change.
 
 <p align="center" width="100%">
-    <img width="50%" src="images/state-diagram.png"> 
+    <img width="25%" src="images/state-diagram.png"> 
 </p>
 
 An alternative might have been to have the baseline controller run alongside the
 operational controller and have the supervisor switch between the two. The
 problem with that is that the supervisor cannot determine $y(t)'$ for the stable
 controller, because it's $u(t)'$ is not passed through the plant.
+
+### Running Supervised Plant Control
+Here is how to run the supervised plant control, with the setpoint of 23
+$\celsius$.  The episodes are saved under `./episodes/` as before.
+
+```sh
+(venv) $ python supervised_plant_control.py
+```
 
 ---
 ## Autotuner

@@ -24,8 +24,8 @@ COL_INTERNAL_DERIVATIVE = '(pid internal) derivative'
 COL_CONTROL_VARIABLE = 'control variable $\%\ u(t)$'
 COL_CONTROL_VARIABLE_UNCAPPED = 'control variable uncapped $\%\ u(t)$'
 COL_PROCESS_VARIABLE = 'process variable $^oC\ y(t)$'
-COL_DISTURBANCE_CONTROL_VARIABLE = 'disturbance control variable $\%\ u^2(t)$'
-COL_SECONDARY_PROCESS_VARIABLE = 'secondary process variable $^oC\ y^2(t)$'
+COL_DISTURBANCE_CONTROL_VARIABLE = 'disturbance control variable $\%\ u2(t)$'
+COL_SECONDARY_PROCESS_VARIABLE = 'secondary process variable $^oC\ y2(t)$'
 COL_STATE = 'state'
 
 #
