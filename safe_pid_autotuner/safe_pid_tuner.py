@@ -5,6 +5,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+#
+# Using $\LaTeX$ in the variable names works well for rendering tables and for
+# MatPlotlib, but they break Pandas' built-in plotting due to the use of
+# backslashes in the column names. We use MatPlotlib, so that should not be an
+# issue.
+#
+
 COL_TIME = 'time $sec$'
 COL_SETPOINT = 'setpoint $^oC\ r(t)$'
 COL_ERROR = 'error $^oC\ e(t)$'
@@ -21,12 +28,20 @@ COL_DISTURBANCE_CONTROL_VARIABLE = 'disturbance control variable $\%\ u^2(t)$'
 COL_SECONDARY_PROCESS_VARIABLE = 'secondary process variable $^oC\ y^2(t)$'
 COL_STATE = 'state'
 
+#
+# What a Panda's data frame looks like for each episode.
+#
+
 EPISODE_COLUMNS = [COL_TIME, COL_SETPOINT,
                    COL_KP, COL_KI, COL_KD,
                    COL_INTERNAL_PROPORTIONAL, COL_INTERNAL_INTEGRAL, COL_INTERNAL_DERIVATIVE,
                    COL_ERROR, COL_CONTROL_VARIABLE_UNCAPPED, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE,
                    COL_DISTURBANCE_CONTROL_VARIABLE, COL_SECONDARY_PROCESS_VARIABLE,
                    COL_STATE]
+
+#
+# These are the supervisor states.
+#
 
 STATE_NORMAL = 0
 STATE_FALLBACK = 1

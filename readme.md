@@ -204,16 +204,23 @@ See also:
 for the TCLab and for `simple_pid` see
 [`__call()__` API reference](https://simple-pid.readthedocs.io/en/latest/reference.html#simple_pid.pid.PID.__call__).
 
+### Running Basic Plant Control
+Here is how to run the basic plant control. For now, the setpoint is just a
+fixed value of 23 $\celsius$.
+
 The programming is cyclic, just like it would be on a PLC, for example. In fact,
 if you own a TCLab device, you can use this loop to control that. Much as I like
 matrix processing and its efficiency, the matrix programming model does not fit
 the continuous control loop that is common for live systems.
 
-For now, the setpoint is just a fixed value of 23 $\celsius$.
-
 ```sh
 (venv) $ python plant_control.py
 ```
+
+The episodes are saved under `./episodes/` as Apache Parquet data frames. You
+can load these easily with Panda's for further processing. The program also
+generates an overview plot as a `.png` file in the same directory and with the
+same name as the data frame. These plots may be useful to see what is going on.
 
 The program runs continuously. You can break out of it using `^C`.
 
