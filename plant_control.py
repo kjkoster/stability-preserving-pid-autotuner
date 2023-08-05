@@ -30,9 +30,13 @@ class PlantControl:
         self.y_t_prev = self.plant.T1
 
         self.pid = PID()
-        self.pid.sample_time = 1.0 / sample_rate
 
         self.sample_rate = sample_rate
+        self.cycle_time = 1.0 / self.sample_rate
+        self.pid.sample_time = self.cycle_time
+        print(f"sample rate is {self.sample_rate} Hz, cycle time is {self.pid.sample_time} second")
+
+        self.previous_time = None
 
 
     def set_pid_tunings(self, pid_tunings):
@@ -64,10 +68,24 @@ class PlantControl:
                 episode_state]
 
 
+    def sleep_until_cycle_starts(self):
+        if self.previous_time is None:
+            self.previous_time = time.time()
+
+        current_time = time.time()
+        while current_time - self.previous_time < self.cycle_time:
+            time.sleep(0.001)
+            current_time = time.time()
+
+        if current_time - self.previous_time > self.cycle_time * 1.01:
+            print(f"cycle time {current_time - self.previous_time:0.3f} exceeds expected time {self.cycle_time:0.3f}")
+        self.previous_time = current_time
+
+
     def episode(self, setpoints):
         results = pd.DataFrame(columns=EPISODE_COLUMNS)
         for t in range(len(setpoints)):
-            time.sleep(1.0 / self.sample_rate)
+            self.sleep_until_cycle_starts()
 
             step_data = self.step(t / self.sample_rate, setpoints[t])
             results.loc[len(results)] = step_data

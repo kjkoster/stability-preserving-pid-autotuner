@@ -47,7 +47,7 @@ STATE_NORMAL = 0
 STATE_FALLBACK = 1
 
 T = 300                          # nominal episodes are 5 minutes, or 300 seconds.
-SAMPLE_RATE = 10 # Hz
+SAMPLE_RATE = 2 # Hz             # the hardware samples take varying times, but anything under ~2.5 Hz looks safe
 EPISODE_LENGTH = T * SAMPLE_RATE # Multiply by sample rate to get the episode and data frame size.
 
 #
