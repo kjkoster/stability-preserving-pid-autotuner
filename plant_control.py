@@ -36,7 +36,8 @@ class PlantControl:
 
 
     def set_pid_tunings(self, pid_tunings):
-        self.pid.pid_tunings = pid_tunings
+        print(f"setting PID parameters (Kp, Ki, Kd) to {pid_tunings}")
+        self.pid.tunings = pid_tunings
         self.pid.reset()
 
 
@@ -56,7 +57,7 @@ class PlantControl:
 
         self.y_t_prev = y_t
         return [t, r_t,
-                self.pid.tunings[0], self.pid.tunings[1], self.pid.tunings[2],
+                self.pid.Kp, self.pid.Ki, self.pid.Kd,
                 self.pid._proportional, self.pid._integral, self.pid._derivative,
                 self.pid._last_error, u_t_uncapped, u_t, y_t,
                 0.0, y2_t,
