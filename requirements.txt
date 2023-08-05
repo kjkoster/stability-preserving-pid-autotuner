@@ -14,5 +14,5 @@ python-dateutil==2.8.2
 pytz==2023.3
 simple-pid==2.0.0
 six==1.16.0
-tclab==0.4.10.dev0
+tclab @ https://github.com/jckantor/TCLab/archive/master.zip
 tzdata==2023.3

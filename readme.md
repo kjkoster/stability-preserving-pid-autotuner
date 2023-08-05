@@ -22,7 +22,7 @@ tuned PID controllers can help eek out the last few drops of performance.
 This project explores a safe, stability-preserving, Reinforcement Learning (RL)
 based automatic PID controller tuning mechanism. The work of this project is
 heavily based on
-[Stability-preserving automatic tuning of PID control with reinforcement learning](https://comengsys.com/article/view/4601)
+[Stability-preserving automatic tuning of PID control with reinforcement learning](https://arxiv.org/abs/2112.15187)
 by Ayub I. Lakhani, Myisha A. Chowdhury and Qiugang Lu, which is released under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).  It is also
 [available on Youtube](https://www.youtube.com/watch?v=ymodIJ7yMKo). This work
@@ -132,16 +132,11 @@ components would also be deployed to a production environment.
 
 ---
 ## Virtual Environment and Dependencies
-We tried to lock down dependencies into a `requirements.txt` file, but not all
-dependencies are trivial to install via the `pip` command. Notably, maintenance
-of TCLab has stopped due to personal circumstances of the maintainer. The latest
-`pip`-installable version is not compatible with the newer Python versions.
-Thus, we install that package manually.
+The dependencies are listed in `requirements.txt`.
 
 ```bash
 $ python3 -m venv venv
 $ source venv/bin/activate
-(venv) $ pip install https://github.com/jckantor/TCLab/archive/master.zip
 (venv) $ pip install -r requirements.txt
 ```
 
