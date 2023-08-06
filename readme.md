@@ -277,7 +277,7 @@ use
 The code is largely copied from our own 
 [PyTorch DDPG Tutorial Implementation](https://github.com/kjkoster/ddpg-continuous-tutorial),
 which in turn is a 99% copy of
-[Reinforcement Learning in Continuous Action Spaces | DDPG Tutorial PyTorch](https://www.youtube.com/watch?v=6Yd5WnYls_Y)
+[Reinforcement Learning in Continuous Action Spaces | DDPG Tutorial (PyTorch)](https://www.youtube.com/watch?v=6Yd5WnYls_Y)
 by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
 
