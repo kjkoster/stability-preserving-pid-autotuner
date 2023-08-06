@@ -25,35 +25,31 @@ class SupervisedPlantControl:
         self.fallback_pid_tunings = fallback_pid_tunings
 
 
+    # this overrides the PlantControl::episode()
     def episode(self, setpoints, pid_tunings):
         results = pd.DataFrame(columns=EPISODE_COLUMNS)
 
         episode_state = STATE_NORMAL
-        if pid_tunings is not None:
-            print(f"at 0: setting new episode PID parameters {pid_tunings}")
-            self.plant.set_pid_tunings(pid_tunings)
+        self.plant.set_pid_tunings(pid_tunings, "episode starts")
 
         for t in range(len(setpoints)):
-            time.sleep(1.0 / self.sample_rate)
+            self.plant.sleep_until_cycle_starts()
 
             step_data = self.plant.step(t / self.sample_rate, setpoints[t], episode_state)
             results.loc[len(results)] = step_data
 
             # in fallback state we just sit the episode out
+            running_error = (results[COL_ERROR]**2).sum()
             if episode_state != STATE_FALLBACK and \
-                    (results[COL_ERROR]**2).sum() > self.lambda_benchmark_error:
-                print(f"at {t}: running error {(results[COL_ERROR]**2).sum():.1f} above lamda*benchmark error {self.lambda_benchmark_error:.1f}, switched to fall-back PID parameters {self.fallback_pid_tunings}")
+                    running_error > self.lambda_benchmark_error:
                 episode_state = STATE_FALLBACK
-                self.plant.set_pid_tunings(self.fallback_pid_tunings)
-
-        if episode_state == STATE_FALLBACK:
-            print(f"at {t}: episode ended, restoring normal PID parameters {pid_tunings}")
-            self.plant.set_pid_tunings(pid_tunings)
+                self.plant.set_pid_tunings(self.fallback_pid_tunings,
+                                           f"running error {running_error:.1f} exceeds benchmark error {self.lambda_benchmark_error:.1f}")
 
         return results
 
 
-def generate_save_and_plot_episode(plant, setpoint, pid_tunings, directory):
+def generate_save_and_plot_episodes(plant, setpoint, pid_tunings, directory):
     os.makedirs(directory, exist_ok=True)
 
     setpoints = np.zeros(EPISODE_LENGTH)
@@ -71,11 +67,11 @@ def generate_save_and_plot_episode(plant, setpoint, pid_tunings, directory):
         plot_episode(results, episode_plot)
 
         # this is where we'd ask the autotuner, but that is for later
-        pid_tunings = None
+        # pid_tunings = ask_autotuner()
 
 
 if __name__ == "__main__":
     plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    supervised_plant_control = SupervisedPlantControl(plant_control, 1200.0, 1.0, (20.0, 0.1, 0.01))
-    generate_save_and_plot_episode(supervised_plant_control, 23.0, (50.0, 0.001, 0.1), "episodes")
+    supervised_plant_control = SupervisedPlantControl(plant_control, 9.0, 1.0, (20.0, 0.1, 0.01))
+    generate_save_and_plot_episodes(supervised_plant_control, 23.0, (50.0, 0.001, 0.1), "episodes")
 

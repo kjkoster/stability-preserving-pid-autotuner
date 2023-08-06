@@ -39,10 +39,13 @@ class PlantControl:
         self.previous_time = None
 
 
-    def set_pid_tunings(self, pid_tunings):
-        print(f"setting PID parameters (Kp, Ki, Kd) to {pid_tunings}")
-        self.pid.tunings = pid_tunings
-        self.pid.reset()
+    def set_pid_tunings(self, pid_tunings, reason):
+        if pid_tunings == self.pid.tunings:
+            print(f"though {reason}, skip setting PID parameters {pid_tunings} as these already apply")
+        else:
+            print(f"setting PID parameters (Kp, Ki, Kd) to {pid_tunings}, because {reason}")
+            self.pid.tunings = pid_tunings
+            self.pid.reset()
 
 
     def step(self, t, r_t, episode_state=STATE_NORMAL):
@@ -93,13 +96,13 @@ class PlantControl:
         return results
 
 
-def generate_save_and_plot_episode(plant, setpoint, pid_tunings, directory):
+def generate_save_and_plot_episodes(plant, setpoint, pid_tunings, directory):
     os.makedirs(directory, exist_ok=True)
 
     setpoints = np.zeros(EPISODE_LENGTH)
     setpoints[:] = setpoint
 
-    plant.set_pid_tunings(pid_tunings)
+    plant.set_pid_tunings(pid_tunings, "episode starts")
 
     while True:
         basename = datetime.utcnow().isoformat()
@@ -115,5 +118,5 @@ def generate_save_and_plot_episode(plant, setpoint, pid_tunings, directory):
 
 if __name__ == "__main__":
     plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    generate_save_and_plot_episode(plant_control, 23.0, (50.0, 0.001, 0.1), "episodes")
+    generate_save_and_plot_episodes(plant_control, 23.0, (50.0, 0.001, 0.1), "episodes")
 

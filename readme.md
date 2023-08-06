@@ -80,14 +80,11 @@ applying
 
 More:
 
-* buy a tclab or two (awaiting delivery)
-* _after delivery_: Explore sample rate limits with the hardware version: https://tclab.readthedocs.io/en/latest/notebooks/02_Accessing_the_Temperature_Control_Laboratory.html#tclab-Sampling-Speed
 * check time progression in both tclab and simple_pid. I think I am mixing real-time and sped-up times on these, which will screw up the integral and derivative calculations.
+* make time compression possible for simulated envronment, read up on how simple_pid does that.
 * Add consistent time speedup to the `PlantControl` class.
 * decide: do I cut episodes short? That way the step response episodes are of better quality, since they will start at the setpoint change.
-* add start values for the PID controller, otherwise we get breaks between episodes
 * Do I keep the pattern of comparing running with totals?
-* make time compression possible for simulated envronment, read up on how simple_pid does that.
 * _after DDPG_ consider convolutions,
 
 ---
