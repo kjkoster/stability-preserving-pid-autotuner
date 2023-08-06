@@ -1,4 +1,4 @@
-# Stability Preserving PID Autotuner
+# Stability Preserving PID Auto-tuner
 Industrial and marine systems use
 [Proportional Integral Derivative controllers (PID)](https://en.wikipedia.org/wiki/PID_controller)
 for a lot of things. They are simple to use and very effective. PID controller
@@ -26,7 +26,7 @@ heavily based on
 by Ayub I. Lakhani, Myisha A. Chowdhury and Qiugang Lu, which is released under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).  It is also
 [available on Youtube](https://www.youtube.com/watch?v=ymodIJ7yMKo). This work
-will be referred to as "the paper" througout this project.
+will be referred to as "the paper" throughout this project.
 
 There are benefits to using reinforcement learning not to learn the control of a
 system, but rather learn how to tune a PID controller to find the optimal PID
@@ -50,13 +50,13 @@ changes in systems response.
 
 * Use the changes in PID control to detect tiny changes in systems behaviour, possibly as early warning system for maintenance.
 * http://brettbeauregard.com/blog/2011/04/improving-the-beginner%E2%80%99s-pid-tuning-changes/
-* Explore how we might have two separate PID controllers: one that responds to setpoint changes and one that is good at tracking stable setpoint values.
+* Explore how we might have two separate PID controllers: one that responds to set-point changes and one that is good at tracking stable set-point values.
 * Make the processes queue based internally.
-* Consider starting a fresh episode whenever the setpoint changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cur short.
+* Consider starting a fresh episode whenever the set-point changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cur short.
 
 **Limitations:**
 * systems with relatively few learning episodes (winches?) or where it is hard to measure the feedback.
-* The paper assumes that setpoint is fixed, so this is for systems where the only disturbances are system wear and outside influences.
+* The paper assumes that set-point is fixed, so this is for systems where the only disturbances are system wear and outside influences.
 
 **TODO**:
 
@@ -81,9 +81,9 @@ applying
 More:
 
 * check time progression in both tclab and simple_pid. I think I am mixing real-time and sped-up times on these, which will screw up the integral and derivative calculations.
-* make time compression possible for simulated envronment, read up on how simple_pid does that.
+* make time compression possible for simulated environment, read up on how simple_pid does that.
 * Add consistent time speedup to the `PlantControl` class.
-* decide: do I cut episodes short? That way the step response episodes are of better quality, since they will start at the setpoint change.
+* decide: do I cut episodes short? That way the step response episodes are of better quality, since they will start at the set-point change.
 * Do I keep the pattern of comparing running with totals?
 * _after DDPG_ consider convolutions,
 
@@ -92,7 +92,7 @@ More:
 Of course, the whole premise for this idea is flawed. The reason not to tune PID
 controllers is in part lack of knowledge and in part lack of a real need,
 finished off by the fact that developers choose predictability over performance.
-Making a machine learning based autotuner solves none of these. If anything, the
+Making a machine learning based auto tuner solves none of these. If anything, the
 relative novelty of machine learning for this application will drive developers
 away from using it.
 
@@ -108,7 +108,7 @@ to explore the operation of the stability-preserving PID tuner.
 
 Shown are two clusters: the environment and the agent, in the naming convention
 of the machine learning community. The environment shows the PID controller
-receiving the setpoint $r(t)$ and feeding the control variable $u(t)$ into the
+receiving the set-point $r(t)$ and feeding the control variable $u(t)$ into the
 simulated plant. The plant's output is the process variable $y(t)$, which is fed
 back into the PID controller.
 
@@ -197,12 +197,12 @@ results. Training 2000 episodes, like in the paper, will take one week of
 wall-clock time.
 
 See also:
-[Synchronizing with Real Time](https://tclab.readthedocs.io/en/latest/notebooks/03_Synchronizing_with_Real_Time.html)
+[Synchronising with Real Time](https://tclab.readthedocs.io/en/latest/notebooks/03_Synchronizing_with_Real_Time.html)
 for the TCLab and for `simple_pid` see
 [`__call()__` API reference](https://simple-pid.readthedocs.io/en/latest/reference.html#simple_pid.pid.PID.__call__).
 
 ### Running Basic Plant Control
-Here is how to run the basic plant control. For now, the setpoint is just a
+Here is how to run the basic plant control. For now, the set-point is just a
 fixed value of 23 $\celsius$.
 
 The programming is cyclic, just like it would be on a PLC, for example. In fact,
@@ -232,20 +232,26 @@ proposed in the paper and replaces the PID parameters with fall-back ones if the
 system appears to be unstable.
 
 From reading the paper, the proposed algorithm uses the accumulated error as the
-inverse reward. Also, the proposed supervisor algorithm compares the _running_
-squared error $RR(t)$ in an episode with the _total_ squared error $R_{bmk}$. We
-expected both to be either total or running, but one and the other. In the code
-below, we follow the same pattern: comparing a running error with a
-total-for-an-episode benchmark.
+reward. The proposed reward is the absence of punishment, in a way. This does
+confuse the terms a bit. In reinforcement learning it is customary to talk of
+rewards, while in other machine learning branches it is common to speak of loss
+and squared error. For this project, we assume these are interchangeable and
+apologise for mixing these terms.
+
+Second, the proposed supervisor algorithm compares the _running_ squared error
+$RR(t)$ in an episode with the _total_ squared error $R_{bmk}$. We expected both
+to be either total or running, but one and the other. In the code below, we
+follow the same pattern: comparing a running error with a total-for-an-episode
+benchmark.
 
 The authors of the the paper propose to base this decision on the cumulative
-error for an episode, but that is useful only for episodes where the setpoint
-$r(t)$ does not change. Changing setpoints would punish the algorithm for
-something it has no control over. The paper solves this by assuming the setpoint
-does not change.
+error for an episode, but that is useful only for episodes where the set-point
+$r(t)$ does not change. Changing set-points would punish the algorithm for
+something it has no control over. The paper works around this by assuming the
+set-point does not change.
 
 <p align="center" width="100%">
-    <img width="25%" src="images/state-diagram.png"> 
+    <img width="40%" src="images/state-diagram.png"> 
 </p>
 
 An alternative might have been to have the baseline controller run alongside the
@@ -254,7 +260,7 @@ problem with that is that the supervisor cannot determine $y(t)'$ for the stable
 controller, because it's $u(t)'$ is not passed through the plant.
 
 ### Running Supervised Plant Control
-Here is how to run the supervised plant control, with the setpoint of 23
+Here is how to run the supervised plant control, with the set-point of 23
 $\celsius$.  The episodes are saved under `./episodes/` as before.
 
 ```sh
@@ -262,7 +268,7 @@ $\celsius$.  The episodes are saved under `./episodes/` as before.
 ```
 
 ---
-## Autotuner
+## Auto-tuner
 With the supervisor ready to take over in case the control loop becomes
 unstable, we turn out attention to the auto tuning. As the paper has, we will
 use
@@ -271,7 +277,7 @@ use
 The code is largely copied from our own 
 [PyTorch DDPG Tutorial Implementation](https://github.com/kjkoster/ddpg-continuous-tutorial),
 which in turn is a 99% copy of
-[Reinforcement Learning in Continuous Action Spaces | DDPG Tutorial Pytorch](https://www.youtube.com/watch?v=6Yd5WnYls_Y)
+[Reinforcement Learning in Continuous Action Spaces | DDPG Tutorial PyTorch](https://www.youtube.com/watch?v=6Yd5WnYls_Y)
 by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
 
