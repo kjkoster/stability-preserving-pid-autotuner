@@ -47,7 +47,7 @@ STATE_NORMAL = 0
 STATE_FALLBACK = 1
 
 T = 300                          # nominal episodes are 5 minutes, or 300 seconds.
-SAMPLE_RATE = 10 # Hz
+SAMPLE_RATE = 2 # Hz             # the hardware samples take varying times, but anything under ~2.5 Hz looks safe
 EPISODE_LENGTH = T * SAMPLE_RATE # Multiply by sample rate to get the episode and data frame size.
 
 #
@@ -75,18 +75,20 @@ def plot_episode(_df, episode_plot=None):
         axes['T'].axvspan(to_fallback, T, facecolor='peachpuff', alpha=0.3)
     axes['T'].set_ylabel(r'temperature $(^oC)$')
     axes['T'].legend(loc='upper right')
-    
+
     axes['H'].axhline(y=0.0,   color='grey', linestyle=':', alpha=0.5)
     axes['H'].axhline(y=100.0, color='grey', linestyle=':', alpha=0.5)
     axes['H'].plot(_df[COL_TIME], _df[COL_CONTROL_VARIABLE_UNCAPPED],    'r--', label=COL_CONTROL_VARIABLE_UNCAPPED)
     axes['H'].plot(_df[COL_TIME], _df[COL_CONTROL_VARIABLE],             'b',   label=COL_CONTROL_VARIABLE)
     axes['H'].plot(_df[COL_TIME], _df[COL_DISTURBANCE_CONTROL_VARIABLE], 'g:',  label=COL_DISTURBANCE_CONTROL_VARIABLE)
+    axes['H'].text(2, 10, f"$(K_p, K_i, K_d) = ({_df[COL_KP][0]}, {_df[COL_KI][0]}, {_df[COL_KD][0]})$", rotation=90, fontsize='xx-small')
     if to_fallback < T:
         axes['H'].axvspan(to_fallback, T, facecolor='peachpuff', alpha=0.3)
+        axes['H'].text(to_fallback + 2, 10, f"$(K_p, K_i, K_d) = ({_df.at[_df.index[-1], COL_KP]}, {_df.at[_df.index[-1], COL_KI]}, {_df.at[_df.index[-1], COL_KD]})$", rotation=90, fontsize='xx-small')
     axes['H'].set_ylabel('heater $(\%)$')
     axes['H'].set_ylim((-50.0, 150.0))
     axes['H'].legend(loc='upper right')
-    
+
     axes['P'].axhline(y=0.0, color='grey', linestyle=':', alpha=0.5)
     axes['P'].plot(_df[COL_TIME], _df[COL_INTERNAL_PROPORTIONAL], label=COL_INTERNAL_PROPORTIONAL)
     if to_fallback < T:
