@@ -8,7 +8,6 @@
 
 import numpy as np
 import pandas as pd
-from simple_pid import PID
 from datetime import datetime
 
 from episodes import SAMPLE_RATE, EPISODE_LENGTH, COL_ERROR, EPISODE_COLUMNS, STATE_NORMAL, STATE_FALLBACK, save_and_plot_episode
@@ -65,6 +64,7 @@ if __name__ == "__main__":
     setpoints[:] = SET_POINT
 
     plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
+    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
     supervised_plant_control = SupervisedPlantControl(plant_control,
                                                       BENCHMARK_ERROR, LAMBDA_ERROR, FALLBACK_PID_TUNINGS)
     while True:

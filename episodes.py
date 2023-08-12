@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 COL_TIME = 'time $sec$'
 COL_SETPOINT = 'setpoint $^oC\ r(t)$'
 COL_ERROR = 'error $^oC\ e(t)$'
+COL_BENCHMARK = 'benchmark error $R_{bmk}$'
 COL_KP = 'proportional gain $K_p$'
 COL_KI = 'integral gain $K_i$'
 COL_KD = 'derivative gain $K_d$'
