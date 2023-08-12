@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 #
-# A script that runs a control loop asynchronously.
+# A script that runs a PID control loop. This is the inner-most control system,
+# directly controlling the plant with the given PID parameters. The plan control
+# runs in steps and does not really have the notion of episodes.
 #
-# The whole thing is wrapped into a class. In earlier incarnations of this code,
-# we found that the plant and the controller's internal states need to be kept
-# consistent. This also makes it easy to initialise a clean controller-plant
-# pair for quick experiments. The code runs iteratively, so that the interfaces
-# to the components are developed to be usable in a live environment. Much as I
-# like matrix processing and its efficiency, the model does not fit the
-# continuous control loop that is common for live systems.
+# The code runs cyclicly, so that its interface is usable in a live environment.
+# Much as I like matrix processing and its efficiency, the model does not fit
+# the continuous control loop that is common for live systems.
 #
 
 import os
@@ -21,7 +19,13 @@ from datetime import datetime
 
 from safe_pid_autotuner.safe_pid_tuner import SAMPLE_RATE, EPISODE_LENGTH, EPISODE_COLUMNS, STATE_NORMAL, plot_episode
 
+
 IS_HARDWARE = False
+SAVE_DIR = "episodes"
+
+PID_TUNINGS = (50.0, 0.001, 0.1)
+SET_POINT = 23.0
+
 
 class PlantControl:
     def __init__(self, is_hardware, sample_rate):
@@ -84,39 +88,47 @@ class PlantControl:
             print(f"cycle time {current_time - self.previous_time:0.3f} exceeds expected time {self.cycle_time:0.3f}")
         self.previous_time = current_time
 
+#
+# The remainder of this file is code to try out the plant control. We will reuse
+# the class above for the other control loop experiments. The code below is just
+# a quick driver to test the control loop in isolation.
+#
 
-    def episode(self, setpoints):
-        results = pd.DataFrame(columns=EPISODE_COLUMNS)
-        for t in range(len(setpoints)):
-            self.sleep_until_cycle_starts()
+#
+# Run a single episode of time T.
+#
+def episode(plant_control, setpoints):
+    results = pd.DataFrame(columns=EPISODE_COLUMNS)
+    for t in range(len(setpoints)):
+        plant_control.sleep_until_cycle_starts()
 
-            step_data = self.step(t / self.sample_rate, setpoints[t])
-            results.loc[len(results)] = step_data
+        step_data = plant_control.step(t / SAMPLE_RATE, setpoints[t])
+        results.loc[len(results)] = step_data
 
-        return results
+    return results
 
-
-def generate_save_and_plot_episodes(plant, setpoint, pid_tunings, directory):
-    os.makedirs(directory, exist_ok=True)
+#
+# The main driver, create a plant-control pair, set the set-points and PID
+# tunings and run episodes until the program is stopped.
+#
+if __name__ == "__main__":
+    os.makedirs(SAVE_DIR, exist_ok=True)
 
     setpoints = np.zeros(EPISODE_LENGTH)
-    setpoints[:] = setpoint
+    setpoints[:] = SET_POINT
 
-    plant.set_pid_tunings(pid_tunings, "episode starts")
+    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
+    plant_control.set_pid_tunings(PID_TUNINGS, "program starts")
 
     while True:
         basename = datetime.utcnow().isoformat()
-        episode_file = f"{directory}/{basename}Z.parquet"
-        episode_plot = f"{directory}/{basename}Z.png"
+        episode_file = f"{SAVE_DIR}/{basename}Z.parquet"
+        episode_plot = f"{SAVE_DIR}/{basename}Z.png"
 
         print(f"generating episode {basename}...")
 
-        results = plant_control.episode(setpoints)
+        results = episode(plant_control, setpoints)
         results.to_parquet(episode_file)
         plot_episode(results, episode_plot)
 
-
-if __name__ == "__main__":
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    generate_save_and_plot_episodes(plant_control, 23.0, (50.0, 0.001, 0.1), "episodes")
 

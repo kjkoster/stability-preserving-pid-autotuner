@@ -1,23 +1,20 @@
 # Stability Preserving PID Auto-tuner
 Industrial and marine systems use
 [Proportional Integral Derivative controllers (PID)](https://en.wikipedia.org/wiki/PID_controller)
-for a lot of things. They are simple to use and very effective. PID controller
-tuning is an area that still leaves room for improvement. In many cases, PIDs
-are quickly hand-tuned and then left to operate under what is likely a
-suboptimal set of parameters. This makes tuning of PID controllers ripe for
-automation.
+for a lot of things. They are simple to use and very effective. In spiute of
+that, PID controller tuning is an area that still leaves room for improvement.
+In many cases, PIDs are quickly hand-tuned and then left to operate under what
+is likely a suboptimal set of parameters. This makes tuning of PID controllers
+ripe for automation.
 
-As a system ages, its behaviour may change over time. Materials wear and
-components may be swapped out for equivalent, but not identical, replacements.
-In an ideal world, all PID controllers on systems would be periodically retuned
-to compensate for changes in response of systems. If not periodically, then at
-least they should be retuned whenever components are replaced. In practice this
-rarely happens. Even the initial tuning is often done quickly and
-conservatively. A PID controller with a fixed set of parameters is not equipped
-to adapt to this.
-
-Specifically in an environment where energy conservation is important, well
-tuned PID controllers can help eek out the last few drops of performance.
+There is another reason for continuous tuning. As a system ages, its behaviour
+may change over time. Materials wear and components may be swapped out for
+equivalent, but not identical, replacements.  In an ideal world, all PID
+controllers on systems would be periodically retuned to compensate for changes
+in response of systems. If not periodically, then at least they should be
+retuned whenever components are replaced. In practice this rarely happens. Even
+the initial tuning is often done quickly and conservatively. A PID controller
+with a fixed set of parameters is not equipped to adapt to this.
 
 This project explores a safe, stability-preserving, Reinforcement Learning (RL)
 based automatic PID controller tuning mechanism. The work of this project is
@@ -44,15 +41,18 @@ still go in, take control and hand-tune the PID controller. This gives engineers
 the option to maintain automatic control under partial systems failure.
 
 Finally, reinforcement learning does not tire or get bored. It follows subtle
-changes in systems response.
+changes in systems response. Specifically in an environment where energy
+conservation is important, well tuned PID controllers can help eek out the last
+few drops of performance.
+
 
 **Future work:**
 
 * Use the changes in PID control to detect tiny changes in systems behaviour, possibly as early warning system for maintenance.
-* http://brettbeauregard.com/blog/2011/04/improving-the-beginner%E2%80%99s-pid-tuning-changes/
+* http://brettbeauregard.com/blog/2011/04/improving-the-beginner%E2%80%99s-pid-tuning-changes/ Does `simple_pid` implement such a measure? If so, do we even have to `reset()` as part of changing the PID tuning?
 * Explore how we might have two separate PID controllers: one that responds to set-point changes and one that is good at tracking stable set-point values.
 * Make the processes queue based internally.
-* Consider starting a fresh episode whenever the set-point changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cur short.
+* Consider starting a fresh episode whenever the set-point changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cut short.
 
 **Limitations:**
 * systems with relatively few learning episodes (winches?) or where it is hard to measure the feedback.
@@ -65,6 +65,7 @@ groundwork
 * background task to generate graphs (but watch the clock, we cannot have the system sleeping).
 * set up an episode-generating server somewhere
 * add sleep/wall-clock time check.
+* make into Docker for the raspberry pi, instead of the venv
 
 training
 
@@ -134,11 +135,16 @@ optimiser does not observe the plant directly.
 
 ---
 ## Virtual Environment and Dependencies
-The dependencies are listed in `requirements.txt`.
+We tried to lock down dependencies into a `requirements.txt` file, but not all
+dependencies are trivial to install via the `pip` command. Notably, maintenance
+of TCLab has stopped due to personal circumstances of the maintainer. The latest
+`pip`-installable version is not compatible with the newer Python versions.
+Thus, we install that package manually.
 
 ```bash
 $ python3 -m venv venv
 $ source venv/bin/activate
+(venv) $ pip install https://github.com/jckantor/TCLab/archive/master.zip
 (venv) $ pip install -r requirements.txt
 ```
 
@@ -163,7 +169,7 @@ for this project.
 For the PID controller, we use
 [simple_pid](https://simple-pid.readthedocs.io/en/latest/user_guide.html) by
 [Martin Lundberg](https://github.com/m-lundberg). This is a neat little PID
-controller library for Python. We don't use it's `output_limits` property, but
+controller library for Python. We don't use its `output_limits` property, but
 implement capping $u(t)$ in code, just so we can see the capped versus uncapped
 values. This gives a sense of how well the capacity of the plant matches the
 desired control range.
@@ -269,14 +275,13 @@ $\celsius$.  The episodes are saved under `./episodes/` as before.
 
 ---
 ## Auto-tuner
-With the supervisor ready to take over in case the control loop becomes
-unstable, we turn out attention to the auto tuning. As the paper has, we will
-use
+With the supervisor ready to take over in case the control loop becomes unstable,
+we turn out attention to the auto tuning. As in the paper, we will use
 [Deep Deterministic Policy Gradients (DDPG)](https://www.youtube.com/watch?v=6Yd5WnYls_Y).
 
 The code is largely copied from our own 
 [PyTorch DDPG Tutorial Implementation](https://github.com/kjkoster/ddpg-continuous-tutorial),
-which in turn is a 99% copy of
+which in turn is a mostly-copy of
 [Reinforcement Learning in Continuous Action Spaces | DDPG Tutorial (PyTorch)](https://www.youtube.com/watch?v=6Yd5WnYls_Y)
 by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
