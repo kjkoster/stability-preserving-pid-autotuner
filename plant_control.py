@@ -50,7 +50,7 @@ class PlantControl:
             self.pid.reset()
 
 
-    def step(self, t, r_t, episode_state=STATE_NORMAL):
+    def step(self, t, r_t, R_bmk=0.0, u2_t=0.0, episode_state=STATE_NORMAL):
         self.pid.setpoint = r_t
         u_t_uncapped = self.pid(self.y_t_prev)
 
@@ -61,6 +61,7 @@ class PlantControl:
             u_t = 100.0
 
         self.plant.U1 = u_t
+        self.plant.U2 = u2_t
         y_t  = self.plant.T1
         y2_t = self.plant.T2
 
@@ -68,8 +69,8 @@ class PlantControl:
         return [t, r_t,
                 self.pid.Kp, self.pid.Ki, self.pid.Kd,
                 self.pid._proportional, self.pid._integral, self.pid._derivative,
-                self.pid._last_error, u_t_uncapped, u_t, y_t,
-                0.0, y2_t,
+                self.pid._last_error, R_bmk,
+                u_t_uncapped, u_t, y_t, u2_t, y2_t,
                 episode_state]
 
 

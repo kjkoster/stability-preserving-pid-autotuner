@@ -20,7 +20,6 @@ PID_TUNINGS = (50.0, 0.001, 0.1)
 SET_POINT = 23.0
 
 BENCHMARK_ERROR = 15.0
-LAMBDA_ERROR = 1.0
 FALLBACK_PID_TUNINGS = (20.0, 0.1, 0.01)
 
 class PidAutotuner:
@@ -40,8 +39,7 @@ if __name__ == "__main__":
 
     plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
     plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
-    supervised_plant_control = SupervisedPlantControl(plant_control,
-                                                      BENCHMARK_ERROR, LAMBDA_ERROR, FALLBACK_PID_TUNINGS)
+    supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
     pid_autotuner = PidAutotuner()
 
     # knowing nothing, we just start with the fallback tunings

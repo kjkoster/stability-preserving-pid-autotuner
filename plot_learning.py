@@ -32,15 +32,18 @@ for file in files:
     last_step = episode.iloc[-1]
     cumulative_error = (episode[COL_ERROR]**2).sum()
 
-    # XXX that 9.0...
     episode_summary = [t,
                        first_step[COL_KP], first_step[COL_KI], first_step[COL_KD],
                        last_step[COL_KP], last_step[COL_KI], last_step[COL_KD],
-                       9.0, cumulative_error]
+                       first_step[COL_BENCHMARK], cumulative_error]
     learning.loc[len(learning)] = episode_summary
     t = t+1
 
-fig, axes = plt.subplot_mosaic("PPP;III;DDD;xyz", figsize=(15,10))
+fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz", figsize=(15,15))
+
+axes['E'].plot(learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
+axes['E'].plot(learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
+axes['E'].legend(loc='upper right')
 
 axes['P'].plot(learning[COL_TIME], learning[COL_KP],     color='r', linestyle=':', label='proposed ' + COL_KP)
 axes['P'].plot(learning[COL_TIME], learning[COL_KP_END], color='b', label=COL_KP_END)
@@ -86,9 +89,6 @@ ax.legend()
 plt.savefig('learning-3d.png')
 plt.close(fig)
 
-# plot the cumulative error for all episodes
-# add benchmark error to episode dataframe
-# plot the benchmark error too
 # add timestamp to title in episode plot
 
 
