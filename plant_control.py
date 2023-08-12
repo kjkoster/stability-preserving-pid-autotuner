@@ -9,7 +9,6 @@
 # the continuous control loop that is common for live systems.
 #
 
-import os
 import time
 import tclab
 import numpy as np
@@ -17,11 +16,10 @@ import pandas as pd
 from simple_pid import PID
 from datetime import datetime
 
-from safe_pid_autotuner.safe_pid_tuner import SAMPLE_RATE, EPISODE_LENGTH, EPISODE_COLUMNS, STATE_NORMAL, plot_episode
+from episodes import SAMPLE_RATE, EPISODE_LENGTH, EPISODE_COLUMNS, STATE_NORMAL, save_and_plot_episode
 
 
 IS_HARDWARE = False
-SAVE_DIR = "episodes"
 
 PID_TUNINGS = (50.0, 0.001, 0.1)
 SET_POINT = 23.0
@@ -97,7 +95,7 @@ class PlantControl:
 #
 # Run a single episode of time T.
 #
-def episode(plant_control, setpoints):
+def run_episode(plant_control, setpoints):
     results = pd.DataFrame(columns=EPISODE_COLUMNS)
     for t in range(len(setpoints)):
         plant_control.sleep_until_cycle_starts()
@@ -112,8 +110,6 @@ def episode(plant_control, setpoints):
 # tunings and run episodes until the program is stopped.
 #
 if __name__ == "__main__":
-    os.makedirs(SAVE_DIR, exist_ok=True)
-
     setpoints = np.zeros(EPISODE_LENGTH)
     setpoints[:] = SET_POINT
 
@@ -121,14 +117,9 @@ if __name__ == "__main__":
     plant_control.set_pid_tunings(PID_TUNINGS, "program starts")
 
     while True:
-        basename = datetime.utcnow().isoformat()
-        episode_file = f"{SAVE_DIR}/{basename}Z.parquet"
-        episode_plot = f"{SAVE_DIR}/{basename}Z.png"
+        timestamp_utc = datetime.utcnow()
+        print(f"generating episode {timestamp_utc.isoformat()}...")
 
-        print(f"generating episode {basename}...")
-
-        results = episode(plant_control, setpoints)
-        results.to_parquet(episode_file)
-        plot_episode(results, episode_plot)
-
+        episode = run_episode(plant_control, setpoints)
+        save_and_plot_episode(timestamp_utc, episode)
 

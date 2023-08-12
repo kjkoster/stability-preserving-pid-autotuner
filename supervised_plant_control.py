@@ -6,19 +6,16 @@
 # loop to known-stable (though suboptimal) PID parameters.
 #
 
-import os
-import time
 import numpy as np
 import pandas as pd
 from simple_pid import PID
 from datetime import datetime
 
-from safe_pid_autotuner.safe_pid_tuner import SAMPLE_RATE, EPISODE_LENGTH, COL_ERROR, EPISODE_COLUMNS, STATE_NORMAL, STATE_FALLBACK, plot_episode
+from episodes import SAMPLE_RATE, EPISODE_LENGTH, COL_ERROR, EPISODE_COLUMNS, STATE_NORMAL, STATE_FALLBACK, save_and_plot_episode
 from plant_control import PlantControl
 
 
 IS_HARDWARE = False
-SAVE_DIR = "episodes"
 
 PID_TUNINGS = (50.0, 0.001, 0.1)
 SET_POINT = 23.0
@@ -64,8 +61,6 @@ class SupervisedPlantControl:
 # and PID tunings and run episodes until the program is stopped.
 #
 if __name__ == "__main__":
-    os.makedirs(SAVE_DIR, exist_ok=True)
-
     setpoints = np.zeros(EPISODE_LENGTH)
     setpoints[:] = SET_POINT
 
@@ -73,17 +68,9 @@ if __name__ == "__main__":
     supervised_plant_control = SupervisedPlantControl(plant_control,
                                                       BENCHMARK_ERROR, LAMBDA_ERROR, FALLBACK_PID_TUNINGS)
     while True:
-        basename = datetime.utcnow().isoformat()
-        episode_file = f"{SAVE_DIR}/{basename}Z.parquet"
-        episode_plot = f"{SAVE_DIR}/{basename}Z.png"
+        timestamp_utc = datetime.utcnow()
+        print(f"generating episode {timestamp_utc.isoformat()}...")
 
-        print(f"supervised: generating episode {basename}...")
-
-        results = supervised_plant_control.episode(setpoints, PID_TUNINGS)
-        results.to_parquet(episode_file)
-        plot_episode(results, episode_plot)
-
-        # this is where we'd ask the autotuner, but that is for later
-        # pid_tunings = ask_autotuner()
-
+        episode = supervised_plant_control.episode(setpoints, PID_TUNINGS)
+        save_and_plot_episode(timestamp_utc, episode)
 

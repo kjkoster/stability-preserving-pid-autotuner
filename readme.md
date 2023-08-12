@@ -263,7 +263,7 @@ set-point does not change.
 An alternative might have been to have the baseline controller run alongside the
 operational controller and have the supervisor switch between the two. The
 problem with that is that the supervisor cannot determine $y(t)'$ for the stable
-controller, because it's $u(t)'$ is not passed through the plant.
+controller, because its $u(t)'$ is not passed through the plant.
 
 ### Running Supervised Plant Control
 Here is how to run the supervised plant control, with the set-point of 23
