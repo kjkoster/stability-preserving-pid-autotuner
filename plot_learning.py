@@ -3,8 +3,10 @@
 # A script to ingest a bunch of episodes and plot how the PID parameters
 # progressed over time. This gives some idea on how learning progresses.
 #
+import re
 import sys
 import pandas as pd
+from datetime import datetime
 import matplotlib.pyplot as plt
 
 from episodes import COL_TIME, COL_KP, COL_KI, COL_KD, COL_BENCHMARK, COL_ERROR
@@ -24,9 +26,12 @@ learning = pd.DataFrame(columns=LEARNING_COLUMNS)
 
 files = sys.argv[1:]
 files.sort()
-t = 0 # XXX
 for file in files:
     episode = pd.read_parquet(file)
+
+    t_string = re.sub('.*/', '', file)
+    t_string = re.sub('\..*', '', t_string)
+    t = datetime.strptime(t_string, '%Y-%m-%dT%H%M%S')
 
     first_step = episode.iloc[0]
     last_step = episode.iloc[-1]
@@ -37,12 +42,11 @@ for file in files:
                        last_step[COL_KP], last_step[COL_KI], last_step[COL_KD],
                        first_step[COL_BENCHMARK], cumulative_error]
     learning.loc[len(learning)] = episode_summary
-    t = t+1
 
 fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz", figsize=(15,15))
 
-axes['E'].plot(learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
-axes['E'].plot(learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
+axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
+axes['E'].plot(learning[COL_TIME], learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
 axes['E'].legend(loc='upper right')
 
 axes['P'].plot(learning[COL_TIME], learning[COL_KP],     color='r', linestyle=':', label='proposed ' + COL_KP)
@@ -88,7 +92,4 @@ ax.legend()
 
 plt.savefig('learning-3d.png')
 plt.close(fig)
-
-# add timestamp to title in episode plot
-
 
