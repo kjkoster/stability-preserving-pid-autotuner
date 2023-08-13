@@ -1,7 +1,7 @@
 # Stability Preserving PID Auto-tuner
 Industrial and marine systems use
 [Proportional Integral Derivative controllers (PID)](https://en.wikipedia.org/wiki/PID_controller)
-for a lot of things. They are simple to use and very effective. In spiute of
+for a lot of things. They are simple to use and very effective. In spite of
 that, PID controller tuning is an area that still leaves room for improvement.
 In many cases, PIDs are quickly hand-tuned and then left to operate under what
 is likely a suboptimal set of parameters. This makes tuning of PID controllers
@@ -10,11 +10,12 @@ ripe for automation.
 There is another reason for continuous tuning. As a system ages, its behaviour
 may change over time. Materials wear and components may be swapped out for
 equivalent, but not identical, replacements.  In an ideal world, all PID
-controllers on systems would be periodically retuned to compensate for changes
+controllers on systems would be periodically re-tuned to compensate for changes
 in response of systems. If not periodically, then at least they should be
 retuned whenever components are replaced. In practice this rarely happens. Even
 the initial tuning is often done quickly and conservatively. A PID controller
-with a fixed set of parameters is not equipped to adapt to this.
+with a fixed set of parameters is not equipped to adapt to change in the plant's
+behaviour.
 
 This project explores a safe, stability-preserving, Reinforcement Learning (RL)
 based automatic PID controller tuning mechanism. The work of this project is
@@ -31,17 +32,16 @@ control for a system. PID controllers are well understood and mathematically
 easy to explain. For systems in environments where human lives are dependent on
 the good operation of systems, the verifiability of the operation of that system
 is very important. Pure RL control would make the control system into a black
-box. RL systems are not considered to be in the category of explainable machine
-learning models. By limiting the scope of RL to PID tuning, the tuning process
-may be a black box, while the resultant control system is still well understood
-and explainable.
+box.  By limiting the scope of RL to PID tuning, the tuning process may be a
+black box, while the resultant control system is still well understood and
+explainable.
 
 In an emergency when the reinforcement learning were to break down, humans can
 still go in, take control and hand-tune the PID controller. This gives engineers
 the option to maintain automatic control under partial systems failure.
 
 Finally, reinforcement learning does not tire or get bored. It follows subtle
-changes in systems response. Specifically in an environment where energy
+changes in system response. Specifically in an environment where energy
 conservation is important, well tuned PID controllers can help eek out the last
 few drops of performance.
 
@@ -66,14 +66,13 @@ groundwork
 * set up an episode-generating server somewhere
 * add sleep/wall-clock time check.
 * make into Docker for the raspberry pi, instead of the venv
+* https://keras-rl.readthedocs.io/en/latest/agents/ddpg/
 
 training
 
 * import phil's agent code
 * document phil's code
 * bolt the disk episodes onto the memory class
-* add diagrams
-* attributions etc
 
 applying
 
