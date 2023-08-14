@@ -63,7 +63,8 @@ if __name__ == "__main__":
         new_state, reward = evaluate(episode)
 
         print(f"action {action}/{pid_tunings} yielded reward {reward}")
-        agent.remember(observation, action, reward, new_state) # XXX when is an episide done? 'False'
+        # we treat each episode as done, otherwise the system won't learn at all
+        agent.remember(observation, action, reward, new_state, True)
         agent.learn()
 
         observation = new_state
