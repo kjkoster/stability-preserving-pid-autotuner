@@ -21,6 +21,12 @@ SET_POINT = 23.0
 BENCHMARK_ERROR = 15.0
 FALLBACK_PID_TUNINGS = (20.0, 0.1, 0.01)
 
+MAP_GAINS = [500.0, 50.0, 5.0]
+
+def map_action_to_pid_tunings(action):
+    return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
+
+
 def evaluate(episode):
     return episode.iloc[range(0, T, int(T/12))][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].values.reshape(24, 1).flatten().tolist() , \
            -(episode[COL_ERROR]**2).sum()
@@ -56,7 +62,7 @@ if __name__ == "__main__":
         print(f"generating episode {timestamp_utc.isoformat()}...")
 
         action = agent.choose_action(observation)
-        pid_tunings = (max(0, action[0]) * 500.0, max(0, action[1]) * 50.0, max(0, action[2]) * 5.0)
+        pid_tunings = map_action_to_pid_tunings(action)
 
         episode = supervised_plant_control.episode(setpoints, pid_tunings)
         save_and_plot_episode(timestamp_utc, episode)

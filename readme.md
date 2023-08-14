@@ -67,6 +67,10 @@ groundwork
 * add sleep/wall-clock time check.
 * make into Docker for the raspberry pi, instead of the venv
 * https://keras-rl.readthedocs.io/en/latest/agents/ddpg/
+* https://nl.mathworks.com/help/reinforcement-learning/ug/td3-agents.html
+* https://github.com/gerkone/DDPG_TF2
+* https://stackoverflow.com/questions/65984803/ddpg-not-converging-for-a-simple-control-problem
+* https://www.reddit.com/r/reinforcementlearning/comments/u4ci7r/getting_maxmin_action_in_ddpg_and_td3/
 
 training
 
@@ -86,6 +90,7 @@ More:
 * decide: do I cut episodes short? That way the step response episodes are of better quality, since they will start at the set-point change.
 * Do I keep the pattern of comparing running with totals?
 * _after DDPG_ consider convolutions,
+* What is the impact of less/more noise? How much noise is added anyway?
 
 ---
 ## Flawed Premise
@@ -131,6 +136,29 @@ Where the diagrams in the paper show tight integration between the optimiser and
 the environment, we make the supervisor responsible to keep these two separate.
 The machine learning model is fed and queried by the supervisor and the
 optimiser does not observe the plant directly.
+
+### The Agent's Action Space
+
+Most reinforcement learning algorithms have a discrete action space. In this
+project, we try to learn the PID parameters and these are continuous,
+effectively creating an infinite action space. There are algorithms that can
+deal with continuous action spaces, and this project applies
+[Deep Deterministic Policy Gradient (DDPG)](https://arxiv.org/abs/1509.02971v6),
+as proposed in the paper.
+
+Though we chose not to do so, there are ways we could have made the action space
+discrete. For example, we could have used increase/decrease controls on each PID
+parameter.
+
+Before we can apply the chosen action, we have to scale it. The agent chooses
+each of its action values between 0.0 and 1.0. The PID controller uses gain
+values that can range in the 100's for the proportional gain, but are probably
+much lower for the integral gain and even lower for the derivative gain. The PID
+controller also expects PID parameters to either all be positive (for forward
+acting control) or all be negative (for reverse acting control).  All this to
+say that we need a scaling function that maps the chosen action values onto the
+gain values. We do this by multiplying each gain value separately, so that we
+can have different values for each gain.
 
 ---
 ## Virtual Environment and Dependencies

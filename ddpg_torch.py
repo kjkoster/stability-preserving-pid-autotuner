@@ -154,7 +154,7 @@ class ActorNetwork(nn.Module):
         state_value = self.bn2(state_value)
         state_value = F.relu(state_value)
         state_value = self.mu(state_value)
-        state_value = T.tanh(state_value)
+        state_value = F.relu(state_value)
 
         return state_value
 
