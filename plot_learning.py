@@ -47,6 +47,7 @@ fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz", figsize=(15,15))
 
 axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
 axes['E'].plot(learning[COL_TIME], learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
+axes['E'].set_ylim((0, first_step[COL_BENCHMARK] * 4))
 axes['E'].legend(loc='upper right')
 
 axes['P'].plot(learning[COL_TIME], learning[COL_KP],     color='r', linestyle=':', label='proposed ' + COL_KP)
