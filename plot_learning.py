@@ -5,6 +5,7 @@
 #
 import re
 import sys
+import numpy as np
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -64,16 +65,19 @@ axes['D'].legend(loc='upper right')
 
 axes['x'].scatter(learning[COL_KP], learning[COL_KI],         color='r', alpha=0.2, label='proposed')
 axes['x'].scatter(learning[COL_KP_END], learning[COL_KI_END], color='b',            label='applied')
+axes['x'].plot(np.unique(learning[COL_KP_END]), np.poly1d(np.polyfit(learning[COL_KP_END], learning[COL_KI_END], 1))(np.unique(learning[COL_KP_END])))
 axes['x'].set_xlabel(COL_KP)
 axes['x'].set_ylabel(COL_KI)
 
-axes['y'].scatter(learning[COL_KI], learning[COL_KD], color='r', alpha=0.2, label='proposed')
+axes['y'].scatter(learning[COL_KI], learning[COL_KD],         color='r', alpha=0.2, label='proposed')
 axes['y'].scatter(learning[COL_KI_END], learning[COL_KD_END], color='b',            label='applied')
+axes['y'].plot(np.unique(learning[COL_KI_END]), np.poly1d(np.polyfit(learning[COL_KI_END], learning[COL_KD_END], 1))(np.unique(learning[COL_KI_END])))
 axes['y'].set_xlabel(COL_KI)
 axes['y'].set_ylabel(COL_KD)
 
-axes['z'].scatter(learning[COL_KD], learning[COL_KP], color='r', alpha=0.2, label='proposed')
+axes['z'].scatter(learning[COL_KD], learning[COL_KP],         color='r', alpha=0.2, label='proposed')
 axes['z'].scatter(learning[COL_KD_END], learning[COL_KP_END], color='b',            label='applied')
+axes['z'].plot(np.unique(learning[COL_KD_END]), np.poly1d(np.polyfit(learning[COL_KD_END], learning[COL_KP_END], 1))(np.unique(learning[COL_KD_END])))
 axes['z'].set_xlabel(COL_KD)
 axes['z'].set_ylabel(COL_KP)
 
