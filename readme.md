@@ -1,7 +1,7 @@
 # Stability Preserving PID Auto-tuner
 Industrial and marine systems use
 [Proportional Integral Derivative controllers (PID)](https://en.wikipedia.org/wiki/PID_controller)
-for a lot of things. They are simple to use and very effective. In spiute of
+for a lot of things. They are simple to use and very effective. In spite of
 that, PID controller tuning is an area that still leaves room for improvement.
 In many cases, PIDs are quickly hand-tuned and then left to operate under what
 is likely a suboptimal set of parameters. This makes tuning of PID controllers
@@ -10,11 +10,12 @@ ripe for automation.
 There is another reason for continuous tuning. As a system ages, its behaviour
 may change over time. Materials wear and components may be swapped out for
 equivalent, but not identical, replacements.  In an ideal world, all PID
-controllers on systems would be periodically retuned to compensate for changes
+controllers on systems would be periodically re-tuned to compensate for changes
 in response of systems. If not periodically, then at least they should be
 retuned whenever components are replaced. In practice this rarely happens. Even
 the initial tuning is often done quickly and conservatively. A PID controller
-with a fixed set of parameters is not equipped to adapt to this.
+with a fixed set of parameters is not equipped to adapt to change in the plant's
+behaviour.
 
 This project explores a safe, stability-preserving, Reinforcement Learning (RL)
 based automatic PID controller tuning mechanism. The work of this project is
@@ -31,17 +32,16 @@ control for a system. PID controllers are well understood and mathematically
 easy to explain. For systems in environments where human lives are dependent on
 the good operation of systems, the verifiability of the operation of that system
 is very important. Pure RL control would make the control system into a black
-box. RL systems are not considered to be in the category of explainable machine
-learning models. By limiting the scope of RL to PID tuning, the tuning process
-may be a black box, while the resultant control system is still well understood
-and explainable.
+box.  By limiting the scope of RL to PID tuning, the tuning process may be a
+black box, while the resultant control system is still well understood and
+explainable.
 
 In an emergency when the reinforcement learning were to break down, humans can
 still go in, take control and hand-tune the PID controller. This gives engineers
 the option to maintain automatic control under partial systems failure.
 
 Finally, reinforcement learning does not tire or get bored. It follows subtle
-changes in systems response. Specifically in an environment where energy
+changes in system response. Specifically in an environment where energy
 conservation is important, well tuned PID controllers can help eek out the last
 few drops of performance.
 
@@ -53,6 +53,7 @@ few drops of performance.
 * Explore how we might have two separate PID controllers: one that responds to set-point changes and one that is good at tracking stable set-point values.
 * Make the processes queue based internally.
 * Consider starting a fresh episode whenever the set-point changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cut short.
+* Staged process: (random) gridsearch to determine hopeful cluster, adapt scaling to that cluster, collect samples in that cluster, re-cluster to determine global optimum, then gradient descent (though this approach does not account for system degradation)
 
 **Limitations:**
 * systems with relatively few learning episodes (winches?) or where it is hard to measure the feedback.
@@ -66,14 +67,17 @@ groundwork
 * set up an episode-generating server somewhere
 * add sleep/wall-clock time check.
 * make into Docker for the raspberry pi, instead of the venv
+* https://keras-rl.readthedocs.io/en/latest/agents/ddpg/
+* https://nl.mathworks.com/help/reinforcement-learning/ug/td3-agents.html
+* https://github.com/gerkone/DDPG_TF2
+* https://stackoverflow.com/questions/65984803/ddpg-not-converging-for-a-simple-control-problem
+* https://www.reddit.com/r/reinforcementlearning/comments/u4ci7r/getting_maxmin_action_in_ddpg_and_td3/
 
 training
 
 * import phil's agent code
 * document phil's code
 * bolt the disk episodes onto the memory class
-* add diagrams
-* attributions etc
 
 applying
 
@@ -87,6 +91,7 @@ More:
 * decide: do I cut episodes short? That way the step response episodes are of better quality, since they will start at the set-point change.
 * Do I keep the pattern of comparing running with totals?
 * _after DDPG_ consider convolutions,
+* What is the impact of less/more noise? How much noise is added anyway?
 
 ---
 ## Flawed Premise
@@ -132,6 +137,29 @@ Where the diagrams in the paper show tight integration between the optimiser and
 the environment, we make the supervisor responsible to keep these two separate.
 The machine learning model is fed and queried by the supervisor and the
 optimiser does not observe the plant directly.
+
+### The Agent's Action Space
+
+Most reinforcement learning algorithms have a discrete action space. In this
+project, we try to learn the PID parameters and these are continuous,
+effectively creating an infinite action space. There are algorithms that can
+deal with continuous action spaces, and this project applies
+[Deep Deterministic Policy Gradient (DDPG)](https://arxiv.org/abs/1509.02971v6),
+as proposed in the paper.
+
+Though we chose not to do so, there are ways we could have made the action space
+discrete. For example, we could have used increase/decrease controls on each PID
+parameter.
+
+Before we can apply the chosen action, we have to scale it. The agent chooses
+each of its action values between 0.0 and 1.0. The PID controller uses gain
+values that can range in the 100's for the proportional gain, but are probably
+much lower for the integral gain and even lower for the derivative gain. The PID
+controller also expects PID parameters to either all be positive (for forward
+acting control) or all be negative (for reverse acting control).  All this to
+say that we need a scaling function that maps the chosen action values onto the
+gain values. We do this by multiplying each gain value separately, so that we
+can have different values for each gain.
 
 ---
 ## Virtual Environment and Dependencies
@@ -263,7 +291,7 @@ set-point does not change.
 An alternative might have been to have the baseline controller run alongside the
 operational controller and have the supervisor switch between the two. The
 problem with that is that the supervisor cannot determine $y(t)'$ for the stable
-controller, because it's $u(t)'$ is not passed through the plant.
+controller, because its $u(t)'$ is not passed through the plant.
 
 ### Running Supervised Plant Control
 Here is how to run the supervised plant control, with the set-point of 23

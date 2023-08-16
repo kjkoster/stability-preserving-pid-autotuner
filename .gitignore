@@ -3,3 +3,6 @@
 episodes
 venv
 *.swp
+learning-3d.png
+learning.png
+__pycache__

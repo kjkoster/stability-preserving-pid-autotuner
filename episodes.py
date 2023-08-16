@@ -1,7 +1,8 @@
 #
-# The core functions.
+# Functions to save and plot episodes.
 #
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt
 COL_TIME = 'time $sec$'
 COL_SETPOINT = 'setpoint $^oC\ r(t)$'
 COL_ERROR = 'error $^oC\ e(t)$'
+COL_BENCHMARK = 'benchmark error $R_{bmk}$'
 COL_KP = 'proportional gain $K_p$'
 COL_KI = 'integral gain $K_i$'
 COL_KD = 'derivative gain $K_d$'
@@ -35,20 +37,30 @@ COL_STATE = 'state'
 EPISODE_COLUMNS = [COL_TIME, COL_SETPOINT,
                    COL_KP, COL_KI, COL_KD,
                    COL_INTERNAL_PROPORTIONAL, COL_INTERNAL_INTEGRAL, COL_INTERNAL_DERIVATIVE,
-                   COL_ERROR, COL_CONTROL_VARIABLE_UNCAPPED, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE,
+                   COL_ERROR, COL_BENCHMARK,
+                   COL_CONTROL_VARIABLE_UNCAPPED, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE,
                    COL_DISTURBANCE_CONTROL_VARIABLE, COL_SECONDARY_PROCESS_VARIABLE,
                    COL_STATE]
 
 #
 # These are the supervisor states.
 #
-
 STATE_NORMAL = 0
 STATE_FALLBACK = 1
 
 T = 300                          # nominal episodes are 5 minutes, or 300 seconds.
 SAMPLE_RATE = 2 # Hz             # the hardware samples take varying times, but anything under ~2.5 Hz looks safe
 EPISODE_LENGTH = T * SAMPLE_RATE # Multiply by sample rate to get the episode and data frame size.
+
+SAVE_DIR = "episodes"
+
+
+#
+# Save an episode in an easily retrievable format.
+#
+def save_episode(_df, save_file):
+    _df.to_parquet(save_file)
+
 
 #
 # To get good insights in how the system behaves, we define a plotting function.
@@ -58,7 +70,7 @@ EPISODE_LENGTH = T * SAMPLE_RATE # Multiply by sample rate to get the episode an
 # a percentage. Finally, we take a sneak peek at internal state of the PID
 # controller.
 #
-def plot_episode(_df, episode_plot=None):
+def plot_episode(_df, plot_file):
     to_fallback = np.searchsorted(_df[COL_STATE], STATE_FALLBACK) / SAMPLE_RATE
 
     plt.rcParams['lines.linewidth'] = 0.8
@@ -107,9 +119,17 @@ def plot_episode(_df, episode_plot=None):
         axes['D'].axvspan(to_fallback, T, facecolor='peachpuff', alpha=0.3)
     axes['D'].legend(loc='upper right')
 
-    if episode_plot is None:
-        fig.show();
-    else:
-        plt.savefig(episode_plot)
-        plt.close(fig)
+    plt.savefig(plot_file)
+    plt.close(fig)
+
+
+#
+# Save and plot an episode.
+#
+def save_and_plot_episode(timestamp_utc, episode):
+    os.makedirs(SAVE_DIR, exist_ok=True)
+
+    basename = timestamp_utc.isoformat().replace(':', '')
+    save_episode(episode, f"{SAVE_DIR}/{basename}Z.parquet")
+    plot_episode(episode, f"{SAVE_DIR}/{basename}Z.png")
 
