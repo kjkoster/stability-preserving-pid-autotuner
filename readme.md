@@ -53,6 +53,7 @@ few drops of performance.
 * Explore how we might have two separate PID controllers: one that responds to set-point changes and one that is good at tracking stable set-point values.
 * Make the processes queue based internally.
 * Consider starting a fresh episode whenever the set-point changes (significantly). That way, we have a predictable error form to work with in each episode, at the expense of having to disregard episodes that we cut short.
+* Staged process: (random) gridsearch to determine hopeful cluster, adapt scaling to that cluster, collect samples in that cluster, re-cluster to determine global optimum, then gradient descent (though this approach does not account for system degradation)
 
 **Limitations:**
 * systems with relatively few learning episodes (winches?) or where it is hard to measure the feedback.
