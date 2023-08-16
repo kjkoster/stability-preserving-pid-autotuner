@@ -66,15 +66,15 @@ class CriticNetwork(nn.Module):
 
         self.fc1 = nn.Linear(*input_dims, self.fc1_dims)
         f1 = 1.0 / np.sqrt(self.fc1.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
-        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
+        T.nn.init.uniform_(self.fc1.weight.data, 0, f1)
+        T.nn.init.uniform_(self.fc1.bias.data, 0, f1)
 
         self.bn1 = nn.LayerNorm(self.fc1_dims)
 
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         f2 = 1.0 / np.sqrt(self.fc2.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
-        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
+        T.nn.init.uniform_(self.fc2.weight.data, 0, f2)
+        T.nn.init.uniform_(self.fc2.bias.data, 0, f2)
 
         self.bn2 = nn.LayerNorm(self.fc2_dims)
 
@@ -82,8 +82,8 @@ class CriticNetwork(nn.Module):
 
         self.q = nn.Linear(self.fc2_dims, 1)
         f3 = 0.003
-        T.nn.init.uniform_(self.q.weight.data, -f3, f3)
-        T.nn.init.uniform_(self.q.bias.data, -f3, f3)
+        T.nn.init.uniform_(self.q.weight.data, 0, f3)
+        T.nn.init.uniform_(self.q.bias.data, 0, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
@@ -125,22 +125,22 @@ class ActorNetwork(nn.Module):
 
         self.fc1 = nn.Linear(*input_dims, self.fc1_dims)
         f1 = 1.0 / np.sqrt(self.fc1.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
-        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
+        T.nn.init.uniform_(self.fc1.weight.data, 0, f1)
+        T.nn.init.uniform_(self.fc1.bias.data, 0, f1)
 
         self.bn1 = nn.LayerNorm(self.fc1_dims)
 
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         f2 = 1.0 / np.sqrt(self.fc2.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
-        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
+        T.nn.init.uniform_(self.fc2.weight.data, 0, f2)
+        T.nn.init.uniform_(self.fc2.bias.data, 0, f2)
 
         self.bn2 = nn.LayerNorm(self.fc2_dims)
 
         self.mu = nn.Linear(self.fc2_dims, n_actions)
         f3 = 0.003
-        T.nn.init.uniform_(self.mu.weight.data, -f3, f3)
-        T.nn.init.uniform_(self.mu.bias.data, -f3, f3)
+        T.nn.init.uniform_(self.mu.weight.data, 0, f3)
+        T.nn.init.uniform_(self.mu.bias.data, 0, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=self.alpha)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
