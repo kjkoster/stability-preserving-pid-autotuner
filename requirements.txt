@@ -21,7 +21,6 @@ simple-pid==2.0.0
 six==1.16.0
 tclab @ https://github.com/jckantor/TCLab/archive/master.zip
 sympy==1.12
-tclab==0.4.10.dev0
 torch==2.0.1
 typing_extensions==4.7.1
 tzdata==2023.3
