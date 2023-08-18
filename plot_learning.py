@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from episodes import COL_TIME, COL_KP, COL_KI, COL_KD, COL_BENCHMARK, COL_ERROR
+from episodes import COL_TIME, COL_KP, COL_KI, COL_KD, COL_BENCHMARK, COL_ERROR, COL_STATE, STATE_NORMAL
 
 
 COL_KP_END = 'applied proportional gain $K_p$'
@@ -21,7 +21,8 @@ LEARNING_COLUMNS = [
     COL_TIME,
     COL_KP, COL_KI, COL_KD,             # plotted in red: the start values
     COL_KP_END, COL_KI_END, COL_KD_END, # plotted in blue, the end values
-    COL_BENCHMARK, COL_ERROR            # the sum of the squared error
+    COL_BENCHMARK, COL_ERROR,           # the sum of the squared error
+    COL_STATE                           # the final state of the episode
 ]
 learning = pd.DataFrame(columns=LEARNING_COLUMNS)
 
@@ -41,7 +42,8 @@ for file in files:
     episode_summary = [t,
                        first_step[COL_KP], first_step[COL_KI], first_step[COL_KD],
                        last_step[COL_KP], last_step[COL_KI], last_step[COL_KD],
-                       first_step[COL_BENCHMARK], cumulative_error]
+                       first_step[COL_BENCHMARK], cumulative_error,
+                       last_step[COL_STATE]]
     learning.loc[len(learning)] = episode_summary
 
 fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz;klm;uvw", figsize=(15,15))
@@ -84,9 +86,7 @@ axes['z'].set_ylabel(COL_KP)
 
 # ---
 
-only_applied = learning.loc[learning[COL_KP] == learning[COL_KP_END]]
-only_applied = only_applied.loc[only_applied[COL_KI] == only_applied[COL_KI_END]]
-only_applied = only_applied.loc[only_applied[COL_KD] == only_applied[COL_KD_END]]
+only_applied = learning.loc[learning[COL_STATE] == STATE_NORMAL]
 only_applied = only_applied.iloc[1: , :] # first row is not an agent controlled run
 
 axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b', label='applied')
