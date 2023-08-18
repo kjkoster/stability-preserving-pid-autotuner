@@ -16,6 +16,7 @@ class OUActionNoise(object):
     def __call__(self):
         x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
             self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
+        x = np.abs(x)
         self.x_prev = x
         return x
 
