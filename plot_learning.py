@@ -49,19 +49,23 @@ fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz;klm;uvw", figsize=(15,15))
 axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
 axes['E'].plot(learning[COL_TIME], learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
 axes['E'].set_ylim((0, first_step[COL_BENCHMARK] * 4))
-axes['E'].legend(loc='upper right')
+axes['E'].legend(loc='upper left')
+
+# ---
 
 axes['P'].plot(learning[COL_TIME], learning[COL_KP],     color='r', linestyle=':', label='proposed ' + COL_KP)
 axes['P'].plot(learning[COL_TIME], learning[COL_KP_END], color='b', label=COL_KP_END)
-axes['P'].legend(loc='upper right')
+axes['P'].legend(loc='upper left')
 
 axes['I'].plot(learning[COL_TIME], learning[COL_KI],     color='r', linestyle=':', label='proposed ' +COL_KI)
 axes['I'].plot(learning[COL_TIME], learning[COL_KI_END], color='b', label=COL_KI_END)
-axes['I'].legend(loc='upper right')
+axes['I'].legend(loc='upper left')
 
 axes['D'].plot(learning[COL_TIME], learning[COL_KD],     color='r', linestyle=':', label='proposed ' +COL_KD)
 axes['D'].plot(learning[COL_TIME], learning[COL_KD_END], color='b',                label=COL_KD_END)
-axes['D'].legend(loc='upper right')
+axes['D'].legend(loc='upper left')
+
+# ---
 
 axes['x'].scatter(learning[COL_KP], learning[COL_KI],         color='r', alpha=0.2, label='proposed')
 axes['x'].scatter(learning[COL_KP_END], learning[COL_KI_END], color='b',            label='applied')
@@ -78,6 +82,8 @@ axes['z'].scatter(learning[COL_KD_END], learning[COL_KP_END], color='b',        
 axes['z'].set_xlabel(COL_KD)
 axes['z'].set_ylabel(COL_KP)
 
+# ---
+
 only_applied = learning.loc[learning[COL_KP] == learning[COL_KP_END]]
 only_applied = only_applied.loc[only_applied[COL_KI] == only_applied[COL_KI_END]]
 only_applied = only_applied.loc[only_applied[COL_KD] == only_applied[COL_KD_END]]
@@ -85,18 +91,18 @@ only_applied = only_applied.iloc[1: , :] # first row is not an agent controlled 
 
 axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b', label='applied')
 axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
-axes['k'].set_xlabel(COL_KP)
 axes['k'].set_ylabel(COL_KI)
 
 axes['l'].scatter(only_applied[COL_KI_END], only_applied[COL_KD_END], color='b', label='applied')
 axes['l'].plot(np.unique(only_applied[COL_KI_END]), np.poly1d(np.polyfit(only_applied[COL_KI_END], only_applied[COL_KD_END], 1))(np.unique(only_applied[COL_KI_END])), color='g')
-axes['l'].set_xlabel(COL_KI)
 axes['l'].set_ylabel(COL_KD)
 
 axes['m'].scatter(only_applied[COL_KD_END], only_applied[COL_KP_END], color='b', label='applied')
 axes['m'].plot(np.unique(only_applied[COL_KD_END]), np.poly1d(np.polyfit(only_applied[COL_KD_END], only_applied[COL_KP_END], 1))(np.unique(only_applied[COL_KD_END])), color='g')
-axes['m'].set_xlabel(COL_KD)
 axes['m'].set_ylabel(COL_KP)
+
+
+# ---
 
 axes['u'].scatter(only_applied[COL_KP_END], only_applied[COL_ERROR], color='b', label='applied')
 axes['u'].set_xlabel(COL_KP)
@@ -104,11 +110,11 @@ axes['u'].set_ylabel(COL_ERROR)
 
 axes['v'].scatter(only_applied[COL_KI_END], only_applied[COL_ERROR], color='b', label='applied')
 axes['v'].set_xlabel(COL_KI)
-axes['v'].set_ylabel(COL_ERROR)
 
 axes['w'].scatter(only_applied[COL_KD_END], only_applied[COL_ERROR], color='b', label='applied')
 axes['w'].set_xlabel(COL_KD)
-axes['w'].set_ylabel(COL_ERROR)
+
+# ---
 
 plt.savefig("learning.png")
 plt.close(fig)
@@ -122,7 +128,7 @@ ax.set_xlabel(COL_KP)
 ax.set_ylabel(COL_KI)
 ax.set_zlabel(COL_KD)
 
-ax.legend()
+ax.legend(loc="upper left")
 
 plt.savefig('learning-3d.png')
 plt.close(fig)
