@@ -54,7 +54,6 @@ if __name__ == "__main__":
     timestamp_utc = datetime.utcnow()
     print(f"generating priming episode {timestamp_utc.isoformat()}...")
     episode = supervised_plant_control.episode(setpoints, pid_tunings)
-    save_and_plot_episode(timestamp_utc, episode)
     observation, _ = evaluate(episode)
 
     while True:

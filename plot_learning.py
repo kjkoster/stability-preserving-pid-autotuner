@@ -87,7 +87,6 @@ axes['z'].set_ylabel(COL_KP)
 # ---
 
 only_applied = learning.loc[learning[COL_STATE] == STATE_NORMAL]
-only_applied = only_applied.iloc[1: , :] # first row is not an agent controlled run
 
 axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b', label='applied')
 axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
