@@ -51,11 +51,6 @@ if __name__ == "__main__":
     # knowing nothing, we just start with the fallback tunings
     pid_tunings = FALLBACK_PID_TUNINGS
 
-    # run a first episode, we need a first episode to prime the learning cycle
-    timestamp_utc = datetime.utcnow()
-    print(f"generating priming episode {timestamp_utc.isoformat()}...")
-    episode = supervised_plant_control.episode(setpoints, pid_tunings)
-
     while True:
         timestamp_utc = datetime.utcnow()
         print(f"generating episode {timestamp_utc.isoformat()}...")
