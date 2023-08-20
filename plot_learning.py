@@ -89,15 +89,18 @@ axes['z'].set_ylabel(COL_KP)
 only_applied = learning.loc[learning[COL_STATE] == STATE_NORMAL]
 
 axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b', label='applied')
-axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
+if len(only_applied) > 1:
+    axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
 axes['k'].set_ylabel(COL_KI)
 
 axes['l'].scatter(only_applied[COL_KI_END], only_applied[COL_KD_END], color='b', label='applied')
-axes['l'].plot(np.unique(only_applied[COL_KI_END]), np.poly1d(np.polyfit(only_applied[COL_KI_END], only_applied[COL_KD_END], 1))(np.unique(only_applied[COL_KI_END])), color='g')
+if len(only_applied) > 1:
+    axes['l'].plot(np.unique(only_applied[COL_KI_END]), np.poly1d(np.polyfit(only_applied[COL_KI_END], only_applied[COL_KD_END], 1))(np.unique(only_applied[COL_KI_END])), color='g')
 axes['l'].set_ylabel(COL_KD)
 
 axes['m'].scatter(only_applied[COL_KD_END], only_applied[COL_KP_END], color='b', label='applied')
-axes['m'].plot(np.unique(only_applied[COL_KD_END]), np.poly1d(np.polyfit(only_applied[COL_KD_END], only_applied[COL_KP_END], 1))(np.unique(only_applied[COL_KD_END])), color='g')
+if len(only_applied) > 1:
+    axes['m'].plot(np.unique(only_applied[COL_KD_END]), np.poly1d(np.polyfit(only_applied[COL_KD_END], only_applied[COL_KP_END], 1))(np.unique(only_applied[COL_KD_END])), color='g')
 axes['m'].set_ylabel(COL_KP)
 
 
