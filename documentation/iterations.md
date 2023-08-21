@@ -34,9 +34,18 @@ So to switch the agent to ReLu activation you need all three of setting the fina
 ---
 ## 2023-08-20: Priming the Memory
 
-With the agent happily plodding through the action and observation space, I found that the agent would wander very far away from what is likely to be a useful area to explore. I deliberately  set the bounds for each gain quite wide, so that I would be able to see how well the agent would zoom in on where the optimal policies might lie. If you look at the last graph of the Tanh/ReLu entry, you will see that there are only a few blue spikes where the agent found useful values for the PID gains. However, it then goes off to explore further out, instead of exploring around the acceptable values.
+With the agent happily plodding through the action and observation space, I found that the agent would wander very far away from what is likely to be a useful area to explore. I deliberately set the bounds for each gain quite wide, so that I would be able to see how well the agent would zoom in on where the optimal policies might lie. If you look at the last graph of the Tanh/ReLu logbook entry, you will see that there are only a few blue spikes where the agent found useful values for the PID gains. However, it then goes off to explore further out, instead of exploring around the acceptable values.
 
 We are not training some generic agent and we should use knowledge about the problem domain to improve our system any way we can. We are trying to optimize a PID controller that has been hand-tuned to be reasonably stable already. My intuition tells me that stable values for the PID gains should be clustered in the vicinity of the hand-tuned values.
 
 To validate the intiution, we will run for a while wth completely random actions. That should reveal how the clustering of the useful action space looks like. To do that, we have `random-but-stable-pid-autotuner.py`. This implements an agent that makes no attempt to learn or optimise. All it does is generate random values for the PID gains, so that we can see if there is clustering in the action space or not.
+
+<p align="center" width="100%">
+    <img width="50%" src="../images/priming-fully-random.png">
+</p>
+
+As an aside: I really like the supervisor model that the paper proposed. It makes experimenting with a live system quite doable.
+
+Comparing the DDPG graphs with the random graphs shows that DDPG meanders around in the search space in smaller steps. This has been talked about in the various video's and papers on the stopic, but it is nice to see it realy do so. However, this random graph shows that it covers the action space much more evenly. The DDPG based agents seem to leave a lot of the search space unexplored.
+
 

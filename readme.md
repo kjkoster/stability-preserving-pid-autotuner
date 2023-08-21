@@ -60,6 +60,31 @@ or it will never be used.
 So, with that out of the way...
 
 ---
+## Reading this Document
+
+This document guides you through the process of getting from a no-frills,
+traditional plant control, all the way to an stability-preserving, macbhine
+learning, auto-tuning PID control system.
+
+Readers are expected to have basic knowledge of what a PID controller does. You
+may even have applied one in one of your programs, but that is not necessary to
+follow this material. If you'd like to fork this repository for your own
+purposes, working knowledge of Python is required and you should be able to read
+PyTorch code.
+
+Incidentally, if you do fork this repository, pull requests with improvements
+are very much appreciated.
+
+
+We start by setting up plant control; just simulated, PID controlled heater. We then add the stability-preserving supervisor and visualisations. There is nothing magical or machine learning related for these first steps. Just building the test bed for the more advanced steps.
+
+On top of the supervised plant control we add the automated tuning process.
+
+Finally, this project went through several iterations, most of which I kept a
+logbook for. If you are interested in my personal learning path, you will find
+[my logbook](documentation/iterations.md) interesting.
+
+---
 ## Design
 The diagram below shows the design of the whole system. We will use a plant
 simulator to explore the operation of the stability-preserving PID tuner.
@@ -271,3 +296,4 @@ which in turn is a mostly-copy of
 by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
 
+[DDPG and TD3 (RLVS 2021 version)](https://www.youtube.com/watch?v=0D6a0a1HTtc) by [Olivier Sigaud](https://www.youtube.com/@OlivierSigaud)
