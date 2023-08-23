@@ -46,6 +46,12 @@ To validate the intiution, we will run for a while wth completely random actions
 
 As an aside: I really like the supervisor model that the paper proposed. It makes experimenting with a live system quite doable.
 
+From the graphs of the completely random agent, it is quite clear that effective parameters are clustered around the human-provided fall-back parameter set. It hit a few values that might work, but these fall in a tiny cluster.
+
 Comparing the DDPG graphs with the random graphs shows that DDPG meanders around in the search space in smaller steps. This has been talked about in the various video's and papers on the stopic, but it is nice to see it realy do so. However, this random graph shows that it covers the action space much more evenly. The DDPG based agents seem to leave a lot of the search space unexplored.
+
+Lets combine these things and prime the agent's replay buffer with information that should make it learn better. In most RL projects, we try to reduce biasing the system towards a certain solution, but here we take the opposite approach. We know roughly where the solution lies and want to put a big roadsign pointing to that cluster.
+
+The figure below shows a run where we start with 250 samples in the cluster around the fall-back parameter set. Each episode, we add a bit of noise to the fall-back gains and use that as our parameter pack. Then we run 250 episodes woth fully random PID tunings. This should show the reinforcement learning agent that the rest of the search space is mostly a terrible choice. After these 500 episodes, the agent is started as normal.
 
 

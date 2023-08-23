@@ -10,6 +10,7 @@ from ddpg_torch import Agent
 from datetime import datetime
 
 from episodes import T, SAMPLE_RATE, EPISODE_LENGTH, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE, COL_ERROR, save_and_plot_episode
+from ddpg_torch import OUActionNoise
 from plant_control import PlantControl
 from supervised_plant_control import SupervisedPlantControl
 
@@ -23,8 +24,26 @@ FALLBACK_PID_TUNINGS = (20.0, 0.1, 0.01)
 
 MAP_GAINS = [500.0, 50.0, 5.0]
 
+N_ACTIONS = 3
+BATCH_SIZE = 64
+
 def map_action_to_pid_tunings(action):
     return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
+
+
+noise = OUActionNoise(np.zeros(N_ACTIONS))
+def noisy_fall_back_tunings():
+    noisy_gains = FALLBACK_PID_TUNINGS + noise()
+    return [noisy_gains[0] / MAP_GAINS[0], noisy_gains[1] / MAP_GAINS[1], noisy_gains[2] / MAP_GAINS[2]], \
+           (noisy_gains[0], noisy_gains[1], noisy_gains[2])
+
+
+class RandomAgent(object):
+    def __init__(self, n_actions):
+        self.n_actions = n_actions
+
+    def choose_action(self):
+        return np.random.rand(self.n_actions)
 
 
 def evaluate(episode):
@@ -45,7 +64,7 @@ if __name__ == "__main__":
     plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
-                  batch_size=64, layer1_size=400, layer2_size=300, n_actions=3, max_size=1_000_000)
+                  batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
 
     # knowing nothing, we just start with the fallback tunings
     pid_tunings = FALLBACK_PID_TUNINGS
@@ -56,12 +75,22 @@ if __name__ == "__main__":
     episode = supervised_plant_control.episode(setpoints, pid_tunings)
     observation, _ = evaluate(episode)
 
+    random_agent = RandomAgent(N_ACTIONS)
+
+    iteration_nr = 0
     while True:
         timestamp_utc = datetime.utcnow()
         print(f"generating episode {timestamp_utc.isoformat()}...")
 
-        action = agent.choose_action(observation)
-        pid_tunings = map_action_to_pid_tunings(action)
+        if iteration_nr < 250:
+            action, pid_tunings = noisy_fall_back_tunings()
+        elif iteration_nr < 500:
+            action = random_agent.choose_action()
+            pid_tunings = map_action_to_pid_tunings(action)
+        else:
+            action = agent.choose_action(observation)
+            pid_tunings = map_action_to_pid_tunings(action)
+        iteration_nr += 1
 
         episode = supervised_plant_control.episode(setpoints, pid_tunings)
         save_and_plot_episode(timestamp_utc, episode)
