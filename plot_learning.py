@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from episodes import COL_TIME, COL_KP, COL_KI, COL_KD, COL_BENCHMARK, COL_ERROR
+from episodes import COL_TIME, COL_KP, COL_KI, COL_KD, COL_BENCHMARK, COL_ERROR, COL_STATE, STATE_NORMAL, STATE_FALLBACK
 
 
 COL_KP_END = 'applied proportional gain $K_p$'
@@ -21,7 +21,8 @@ LEARNING_COLUMNS = [
     COL_TIME,
     COL_KP, COL_KI, COL_KD,             # plotted in red: the start values
     COL_KP_END, COL_KI_END, COL_KD_END, # plotted in blue, the end values
-    COL_BENCHMARK, COL_ERROR            # the sum of the squared error
+    COL_BENCHMARK, COL_ERROR,           # the sum of the squared error
+    COL_STATE                           # the final state of the episode
 ]
 learning = pd.DataFrame(columns=LEARNING_COLUMNS)
 
@@ -41,13 +42,14 @@ for file in files:
     episode_summary = [t,
                        first_step[COL_KP], first_step[COL_KI], first_step[COL_KD],
                        last_step[COL_KP], last_step[COL_KI], last_step[COL_KD],
-                       first_step[COL_BENCHMARK], cumulative_error]
+                       first_step[COL_BENCHMARK], cumulative_error,
+                       last_step[COL_STATE]]
     learning.loc[len(learning)] = episode_summary
 
 fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz;klm;uvw", figsize=(15,15))
 
-axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange', label='episode error $RR_T$')
-axes['E'].plot(learning[COL_TIME], learning[COL_BENCHMARK], color='purple', label=COL_BENCHMARK)
+axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange',    label='episode error $RR_T$')
+axes['E'].plot(learning[COL_TIME], learning[COL_BENCHMARK], color='lightgrey', label=COL_BENCHMARK)
 axes['E'].set_ylim((0, first_step[COL_BENCHMARK] * 4))
 axes['E'].legend(loc='upper left')
 
@@ -67,51 +69,78 @@ axes['D'].legend(loc='upper left')
 
 # ---
 
-axes['x'].scatter(learning[COL_KP], learning[COL_KI],         color='r', alpha=0.2, label='proposed')
-axes['x'].scatter(learning[COL_KP_END], learning[COL_KI_END], color='b',            label='applied')
+only_proposed = learning.loc[learning[COL_STATE] == STATE_FALLBACK]
+only_applied  = learning.loc[learning[COL_STATE] == STATE_NORMAL]
+
+axes['x'].scatter(only_proposed[COL_KP], only_proposed[COL_KI],       color='r', alpha=0.2)
+axes['x'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b')
 axes['x'].set_xlabel(COL_KP)
 axes['x'].set_ylabel(COL_KI)
 
-axes['y'].scatter(learning[COL_KI], learning[COL_KD],         color='r', alpha=0.2, label='proposed')
-axes['y'].scatter(learning[COL_KI_END], learning[COL_KD_END], color='b',            label='applied')
+axes['y'].scatter(only_proposed[COL_KI], only_proposed[COL_KD],       color='r', alpha=0.2)
+axes['y'].scatter(only_applied[COL_KI_END], only_applied[COL_KD_END], color='b')
 axes['y'].set_xlabel(COL_KI)
 axes['y'].set_ylabel(COL_KD)
 
-axes['z'].scatter(learning[COL_KD], learning[COL_KP],         color='r', alpha=0.2, label='proposed')
-axes['z'].scatter(learning[COL_KD_END], learning[COL_KP_END], color='b',            label='applied')
+axes['z'].scatter(only_proposed[COL_KD], only_proposed[COL_KP],       color='r', alpha=0.2)
+axes['z'].scatter(only_applied[COL_KD_END], only_applied[COL_KP_END], color='b')
 axes['z'].set_xlabel(COL_KD)
 axes['z'].set_ylabel(COL_KP)
 
 # ---
 
-only_applied = learning.loc[learning[COL_KP] == learning[COL_KP_END]]
-only_applied = only_applied.loc[only_applied[COL_KI] == only_applied[COL_KI_END]]
-only_applied = only_applied.loc[only_applied[COL_KD] == only_applied[COL_KD_END]]
-only_applied = only_applied.iloc[1: , :] # first row is not an agent controlled run
+min_p = only_applied[COL_KP_END].min() * 0.9
+max_p = only_applied[COL_KP_END].max() * 1.1
+min_i = only_applied[COL_KI_END].min() * 0.9
+max_i = only_applied[COL_KI_END].max() * 1.1
+min_d = only_applied[COL_KD_END].min() * 0.9
+max_d = only_applied[COL_KD_END].max() * 1.1
+min_e = only_applied[COL_ERROR].min()  * 0.9
+max_e = only_applied[COL_ERROR].max()  * 1.1
 
-axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], color='b', label='applied')
-axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
+axes['k'].scatter(only_proposed[COL_KP_END], only_proposed[COL_KI_END], color='r', alpha=0.2)
+axes['k'].scatter(only_applied[COL_KP_END], only_applied[COL_KI_END],   color='b')
+if len(only_applied) > 1:
+    axes['k'].plot(np.unique(only_applied[COL_KP_END]), np.poly1d(np.polyfit(only_applied[COL_KP_END], only_applied[COL_KI_END], 1))(np.unique(only_applied[COL_KP_END])), color='g')
+axes['k'].set_xlim((min_p, max_p))
+axes['k'].set_ylim((min_i, max_i))
 axes['k'].set_ylabel(COL_KI)
 
-axes['l'].scatter(only_applied[COL_KI_END], only_applied[COL_KD_END], color='b', label='applied')
-axes['l'].plot(np.unique(only_applied[COL_KI_END]), np.poly1d(np.polyfit(only_applied[COL_KI_END], only_applied[COL_KD_END], 1))(np.unique(only_applied[COL_KI_END])), color='g')
+axes['l'].scatter(only_proposed[COL_KI_END], only_proposed[COL_KD_END], color='r', alpha=0.2)
+axes['l'].scatter(only_applied[COL_KI_END], only_applied[COL_KD_END],   color='b')
+if len(only_applied) > 1:
+    axes['l'].plot(np.unique(only_applied[COL_KI_END]), np.poly1d(np.polyfit(only_applied[COL_KI_END], only_applied[COL_KD_END], 1))(np.unique(only_applied[COL_KI_END])), color='g')
+axes['l'].set_xlim((min_i, max_i))
+axes['l'].set_ylim((min_d, max_d))
 axes['l'].set_ylabel(COL_KD)
 
-axes['m'].scatter(only_applied[COL_KD_END], only_applied[COL_KP_END], color='b', label='applied')
-axes['m'].plot(np.unique(only_applied[COL_KD_END]), np.poly1d(np.polyfit(only_applied[COL_KD_END], only_applied[COL_KP_END], 1))(np.unique(only_applied[COL_KD_END])), color='g')
+axes['m'].scatter(only_proposed[COL_KD_END], only_proposed[COL_KP_END], color='r', alpha=0.2)
+axes['m'].scatter(only_applied[COL_KD_END], only_applied[COL_KP_END],   color='b')
+if len(only_applied) > 1:
+    axes['m'].plot(np.unique(only_applied[COL_KD_END]), np.poly1d(np.polyfit(only_applied[COL_KD_END], only_applied[COL_KP_END], 1))(np.unique(only_applied[COL_KD_END])), color='g')
+axes['m'].set_xlim((min_d, max_d))
+axes['m'].set_ylim((min_p, max_p))
 axes['m'].set_ylabel(COL_KP)
-
 
 # ---
 
-axes['u'].scatter(only_applied[COL_KP_END], only_applied[COL_ERROR], color='b', label='applied')
+axes['u'].scatter(only_proposed[COL_KP_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
+axes['u'].scatter(only_applied[COL_KP_END], only_applied[COL_ERROR],   color='b')
+axes['u'].set_xlim((min_p, max_p))
 axes['u'].set_xlabel(COL_KP)
+axes['u'].set_ylim((min_e, max_e))
 axes['u'].set_ylabel(COL_ERROR)
 
-axes['v'].scatter(only_applied[COL_KI_END], only_applied[COL_ERROR], color='b', label='applied')
+axes['v'].scatter(only_proposed[COL_KI_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
+axes['v'].scatter(only_applied[COL_KI_END], only_applied[COL_ERROR],   color='b')
+axes['v'].set_xlim((min_i, max_i))
+axes['v'].set_ylim((min_e, max_e))
 axes['v'].set_xlabel(COL_KI)
 
-axes['w'].scatter(only_applied[COL_KD_END], only_applied[COL_ERROR], color='b', label='applied')
+axes['w'].scatter(only_proposed[COL_KD_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
+axes['w'].scatter(only_applied[COL_KD_END], only_applied[COL_ERROR],   color='b')
+axes['w'].set_xlim((min_d, max_d))
+axes['w'].set_ylim((min_e, max_e))
 axes['w'].set_xlabel(COL_KD)
 
 # ---
@@ -121,8 +150,8 @@ plt.close(fig)
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
-ax.scatter(learning[COL_KP], learning[COL_KI], learning[COL_KD],             color='r', alpha=0.2, label='proposed')
-ax.scatter(learning[COL_KP_END], learning[COL_KI_END], learning[COL_KD_END], color='b',            label='applied')
+ax.scatter(only_proposed[COL_KP], only_proposed[COL_KI], only_proposed[COL_KD],          color='r', alpha=0.2, label='proposed')
+ax.scatter(only_applied[COL_KP_END], only_applied[COL_KI_END], only_applied[COL_KD_END], color='b',            label='applied')
 
 ax.set_xlabel(COL_KP)
 ax.set_ylabel(COL_KI)
