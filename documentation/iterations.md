@@ -34,7 +34,7 @@ So to switch the agent to ReLu activation you need all three of setting the fina
 ---
 ## 2023-08-20: Priming the Memory
 
-With the agent happily plodding through the action and observation space, I found that the agent would wander very far away from what is likely to be a useful area to explore. I deliberately set the bounds for each gain quite wide, so that I would be able to see how well the agent would zoom in on where the optimal policies might lie. If you look at the last graph of the Tanh/ReLu logbook entry, you will see that there are only a few blue spikes where the agent found useful values for the PID gains. However, it then goes off to explore further out, instead of exploring around the acceptable values.
+With the agent happily plodding through the action and observation spaces, I found that the agent would wander very far away from what is likely to be a useful area to explore. I deliberately set the bounds for each gain quite wide, so that I would be able to see how well the agent would zoom in on where the optimal policies might lie. If you look at the last graph of the Tanh/ReLu logbook entry, you will see that there are only a few blue spikes where the agent found useful values for the PID gains. However, it then goes off to explore further out, instead of exploring around the acceptable values.
 
 We are not training some generic agent and we should use knowledge about the problem domain to improve our system any way we can. We are trying to optimize a PID controller that has been hand-tuned to be reasonably stable already. My intuition tells me that stable values for the PID gains should be clustered in the vicinity of the hand-tuned values.
 
@@ -46,12 +46,27 @@ To validate the intiution, we will run for a while wth completely random actions
 
 As an aside: I really like the supervisor model that the paper proposed. It makes experimenting with a live system quite doable.
 
-From the graphs of the completely random agent, it is quite clear that effective parameters are clustered around the human-provided fall-back parameter set. It hit a few values that might work, but these fall in a tiny cluster.
+From the graphs of the completely random agent, it is quite clear that effective parameters are clustered around the human-provided fall-back parameter set. It hit a few values that might work, but these fall into the same, tiny cluster.
 
 Comparing the DDPG graphs with the random graphs shows that DDPG meanders around in the search space in smaller steps. This has been talked about in the various video's and papers on the stopic, but it is nice to see it realy do so. However, this random graph shows that it covers the action space much more evenly. The DDPG based agents seem to leave a lot of the search space unexplored.
 
-Lets combine these things and prime the agent's replay buffer with information that should make it learn better. In most RL projects, we try to reduce biasing the system towards a certain solution, but here we take the opposite approach. We know roughly where the solution lies and want to put a big roadsign pointing to that cluster.
+Lets combine these things and prime the agent's replay buffer with information that should make it learn better. In most RL projects, we try to reduce biasing the system towards a certain solution, but here we take the opposite approach. We know roughly where the solution lies and want to put a big roadsign pointing to that cluster. We first run the known stable PID tunings for a while and then run with random tunings for a bit. The idea is that this shows the reinforcement learning agent where the optimal cluster is and that the rest of the search space is mostly a terrible choice.
 
-The figure below shows a run where we start with 250 samples in the cluster around the fall-back parameter set. Each episode, we add a bit of noise to the fall-back gains and use that as our parameter pack. Then we run 250 episodes woth fully random PID tunings. This should show the reinforcement learning agent that the rest of the search space is mostly a terrible choice. After these 500 episodes, the agent is started as normal.
+The left of the figures below show a run where we start with 250 samples in the cluster around the fall-back parameter set. Each episode, we add a bit of noise to the fall-back gains and use that as our parameter pack. Then we run 250 episodes woth fully random PID tunings, as shown in the right of the graphs below. These are both graphs from the same run, just each snapshot taken at a different run-time length.
+After these 500 episodes, the agent is started as normal.
 
+<p align="center" width="100%">
+    <img width="30%" src="../images/priming-first-prime.png">
+    <img width="30%" src="../images/priming-after-priming.png">
+</p>
+
+With the priming done, the agent is once again set free. It does give the impresstion of learning properly this time.. This is shown as the red splotch around the blue, probably-optimal cluster. The agent seems prone to over-estimation, which I am told is a weakness of DDPG.
+
+<p align="center" width="100%">
+    <img width="50%" src="../images/priming-done.png">
+</p>
+
+Keep in mind that the number of cycles I run is very low, due to me programming the whole thing as a wall-clock time simulation. My conclusions are bordering wishful thinking.
+
+Overall, I am quite content with this priming idea, and I will keep it in.
 
