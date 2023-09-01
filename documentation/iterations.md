@@ -60,6 +60,8 @@ After these 500 episodes, the agent is started as normal.
     <img width="30%" src="../images/priming-after-priming.png">
 </p>
 
+Perhaps I should have made the spread of the noise wider.
+
 With the priming done, the agent is once again set free. It does give the impresstion of learning properly this time.. This is shown as the red splotch around the blue, probably-optimal cluster. The agent seems prone to over-estimation, which I am told is a weakness of DDPG.
 
 <p align="center" width="100%">

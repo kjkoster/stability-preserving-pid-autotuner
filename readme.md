@@ -1,15 +1,15 @@
 # Stability Preserving PID Auto-tuner
 Industrial and marine systems use
 [Proportional Integral Derivative controllers (PID)](https://en.wikipedia.org/wiki/PID_controller)
-for a lot of things. They are simple to use and very effective. In spite of
-that, PID controller tuning is an area that still leaves room for improvement.
-In many cases, PIDs are quickly hand-tuned and then left to operate under what
-is likely a suboptimal set of parameters. This makes tuning of PID controllers
-ripe for automation.
+for a lot of things. PID controllers are simple to use and very effective. In
+spite of that, PID controller tuning is an area that still leaves room for
+improvement. In many cases, PIDs are quickly hand-tuned and then left to
+operate under what is likely a suboptimal set of parameters. This makes tuning
+of PID controllers ripe for automation.
 
 There is another reason for continuous tuning. As a system ages, its behaviour
 may change over time. Materials wear and components may be swapped out for
-equivalent, but not identical, replacements.  In an ideal world, all PID
+equivalent, but not identical, replacements. In an ideal world, all PID
 controllers on systems would be periodically re-tuned to compensate for changes
 in response of systems. If not periodically, then at least they should be
 retuned whenever components are replaced. In practice this rarely happens. Even
@@ -22,37 +22,38 @@ based automatic PID controller tuning mechanism. The work of this project is
 heavily based on
 [Stability-preserving automatic tuning of PID control with reinforcement learning](https://arxiv.org/abs/2112.15187)
 by Ayub I. Lakhani, Myisha A. Chowdhury and Qiugang Lu, which is released under
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).  It is also
-[available on Youtube](https://www.youtube.com/watch?v=ymodIJ7yMKo). This work
-will be referred to as "the paper" throughout this project.
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). This work will be
+referred to as "the paper" throughout this project.
 
-There are benefits to using reinforcement learning not to learn the control of a
-system, but rather learn how to tune a PID controller to find the optimal PID
-control for a system. PID controllers are well understood and mathematically
-easy to explain. For systems in environments where human lives are dependent on
-the good operation of systems, the verifiability of the operation of that system
-is very important. Pure RL control would make the control system into a black
-box.  By limiting the scope of RL to PID tuning, the tuning process may be a
-black box, while the resultant control system is still well understood and
-explainable.
+Note that we do not use machine learning to control the plant. Instead, we train
+an agent to provide optimal PID gain values and have a classical PID controller
+control the plant. In machine learning, it is more common to train an agent to
+go all the way, but there are benefits for us not to take that route. PID
+controllers are well understood and mathematically easy to explain. For systems
+in environments where human lives are dependent on the good operation of
+systems, the verifiability of the operation of that system is very important.
+Pure RL control would turn the control system into a black box. By limiting the
+scope of RL to PID tuning, the tuning process may be a black box, but the
+resultant plant controller is well understood and explainable.
 
-In an emergency when the reinforcement learning were to break down, humans can
-still go in, take control and hand-tune the PID controller. This gives engineers
-the option to maintain automatic control under partial systems failure.
+In cases where the reinforcement learning never converges or fails in some other
+way, humans can still go in, and take control and hand-tune the PID controller.
+This gives engineers the option to maintain automatic control under partial
+systems failure.
 
 Finally, reinforcement learning does not tire or get bored. It follows subtle
-changes in system response. Specifically in an environment where energy
+changes in plant response. Specifically in an environment where energy
 conservation is important, well tuned PID controllers can help eek out the last
 few drops of performance.
 
 ---
 ## Flawed Premise
-Of course, the whole premise for this idea is flawed. The reason not to tune PID
-controllers is in part lack of knowledge and in part lack of a real need,
-finished off by the fact that developers choose predictability over performance.
-Making a machine learning based auto-tuner solves none of these. If anything, the
-relative novelty of machine learning for this application will drive developers
-away from using it.
+Of course, the whole premise for the idea that I present in this project is
+flawed. The reason not to tune PID controllers is in part lack of knowledge and
+in part lack of a real need, finished off by the fact that developers choose
+predictability over performance. Making a machine learning based auto-tuner
+solves none of these. If anything, the relative novelty of machine learning for
+this application will drive developers away from using it.
 
 So this tuner either works fully automatically and invisibly in the background,
 or it will never be used.
@@ -61,9 +62,8 @@ So, with that out of the way...
 
 ---
 ## Reading this Document
-
 This document guides you through the process of getting from a no-frills,
-traditional plant control, all the way to an stability-preserving, macbhine
+traditional plant control, all the way to an stability-preserving, machine
 learning, auto-tuning PID control system.
 
 Readers are expected to have basic knowledge of what a PID controller does. You
@@ -75,8 +75,13 @@ PyTorch code.
 Incidentally, if you do fork this repository, pull requests with improvements
 are very much appreciated.
 
-
-We start by setting up plant control; just simulated, PID controlled heater. We then add the stability-preserving supervisor and visualisations. There is nothing magical or machine learning related for these first steps. Just building the test bed for the more advanced steps.
+We start with the [design](#design), giving you an overview of what we are
+working towards, although we do so in smaller steps. We the set up
+[basic plant control](#running-basic-plant-control) with a simulated PID
+controlled heater. We then add the
+[stability-preserving supervisor](#add-stability-preserving-supervisor). There
+is nothing magical or machine learning related for these first steps. Just
+building the test bed for the more advanced steps.
 
 On top of the supervised plant control we add the automated tuning process.
 
@@ -109,8 +114,8 @@ fall-back parameter set.
     <img width="50%" src="images/stability-preserving-pid-autotuner.png"> 
 </p>
 
-The simulated components are shown in a sandy colour, while the orange
-components would also be deployed to a production environment.
+The simulated plant is shown in a green colour, while the brown components would
+also be deployed to a production environment.
 
 Where the diagrams in the paper show tight integration between the optimiser and
 the environment, we keep these separate. The driver program queries the machine
@@ -219,75 +224,115 @@ for the TCLab and for `simple_pid` see
 
 ### Running Basic Plant Control
 Here is how to run the basic plant control. For now, the set-point is just a
-fixed value of 23 $\celsius$.
+fixed value of $23 \celsius$.
 
 The programming is cyclic, just like it would be on a PLC, for example. In fact,
 if you own a TCLab device, you can use this loop to control that. Much as I like
 matrix processing and its efficiency, the matrix programming model does not fit
 the continuous control loop that is common for live systems.
 
-```sh
-(venv) $ python plant_control.py
-```
-
-The episodes are saved under `./episodes/` as Apache Parquet data frames. You
-can load these easily with Panda's for further processing. The program also
-generates an overview plot as a `.png` file in the same directory and with the
-same name as the data frame. These plots may be useful to see what is going on.
-
-The program runs continuously. You can break out of it using `^C`.
-
 If you own a TCLab device, edit the script to set `IS_HARDWARE` to `True` (it
 defaults to `False`). That will make the control loop start controlling the
 actual device.
 
----
-## Add Stability Preserving Supervisor
-The next step is to add the supervisor to the system. This supervisor acts as
-proposed in the paper and replaces the PID parameters with fall-back ones if the
-system appears to be unstable.
+```sh
+(venv) $ python plant_control.py
+```
 
-From reading the paper, the proposed algorithm uses the accumulated error as the
-reward. The proposed reward is the absence of punishment, in a way. This does
-confuse the terms a bit. In reinforcement learning it is customary to talk of
-rewards, while in other machine learning branches it is common to speak of loss
-and squared error. For this project, we assume these are interchangeable and
-apologise for mixing these terms.
+The program runs continuously. You can break out of it using `^C`.
 
-Second, the proposed supervisor algorithm compares the _running_ squared error
-$RR(t)$ in an episode with the _total_ squared error $R_{bmk}$. We expected both
-to be either total or running, but one and the other. In the code below, we
-follow the same pattern: comparing a running error with a total-for-an-episode
-benchmark.
-
-The authors of the the paper propose to base this decision on the cumulative
-error for an episode, but that is useful only for episodes where the set-point
-$r(t)$ does not change. Changing set-points would punish the algorithm for
-something it has no control over. The paper works around this by assuming the
-set-point does not change.
+The episodes are saved under `./episodes/` as
+[Apache Parquet](https://parquet.apache.org/) data frames. You can load these
+easily with Panda's for further processing. To help better understand what is
+the plant and the controller are doing, each episode is plotted in a few graphs.
+You can find these plots under `./episodes`, as mentioned previously. here is an
+example of such a graph, with a few explanatory pointers.
 
 <p align="center" width="100%">
-    <img width="40%" src="images/state-diagram.png"> 
+    <img width="80%" src="images/viz-basic-episode.png"> 
 </p>
+
+The top two graphs are pretty easy to read: they show what the termperatures and
+heaters are doing. The three smaller graphs at the bottom expose the internal
+state of the PID controllers, something you would normally not have access to.
+To be clear: these are not the PID gains or parameter vaiues. They are the
+internal values that the PID controller uses to calculate its output. The PID
+gains do not change during an episode. Well, not for the basic plant control,
+anyway.
+
+---
+## Add Stability Preserving Supervisor
+The supervisor behaves as the paper proposes: monitor the running error and if
+that exceeds a benchmark value, reconfigure the PID controller with known-good,
+fall-back parameters. At the end of each episode, the PID controller is reset
+with a fresh set of PID gains and the supervisor resets the running error.
 
 An alternative might have been to have the baseline controller run alongside the
 operational controller and have the supervisor switch between the two. The
 problem with that is that the supervisor cannot determine $y(t)'$ for the stable
 controller, because its $u(t)'$ is not passed through the plant.
 
+More formally, the running error $RR(t)$ is compared to benchmark error
+$R_{bmk}$. If $RR(t) > R_{bmk}$, the supervisor goes into fall-back state. After
+each $T$ steps, the PID controller goes back to the normal state. The state
+machine is shown below.
+
+<p align="center" width="100%">
+    <img width="40%" src="images/state-diagram.png"> 
+</p>
+
+This is a bit confusing for three reasons: first, the _name_ suggests $RR(t)$ is
+the running reward, but the actual use is that of running error. Second, we
+compare a _running_ total against a _static_ benchmark. Third, in reinforcement
+learning, using a reward is more common than using loss. In the implementation
+we chose to use the same variable names, in spite of them being a little
+confusing. Apologies if that is confusing.
+
 ### Running Supervised Plant Control
-Here is how to run the supervised plant control, with the set-point of 23
-$\celsius$.  The episodes are saved under `./episodes/` as before.
+Here is how to run the supervised plant control, with the set-point of
+$23 \celsius$. The episodes are saved under `./episodes/` as before.
 
 ```sh
 (venv) $ python supervised_plant_control.py
 ```
 
+To get a sense of how the supervisor helps, you can run a completely random
+agent. This agent just generates random values as PID gains and passes them to
+the supervisor to try. As you will see, in the vast majority of cases, the
+supervisor will have to revert the PID to using the fall-back values instead.
+
+```sh
+(venv) $ python random_but_stable_pid_autotuner.py
+```
+
+Again, the data and graphs are saved uner `./episodes`. Below is an example of a
+graph where the supervisor had to step in and revert to known-stable PID values.
+
+<p align="center" width="100%">
+    <img width="80%" src="images/viz-fall-back-state.png"> 
+</p>
+
+In that plot, we can see the supervisor kick in around the $t \approx 230$ mark.
+The beige area signifies that the supervisor is in `STATE_FALLBACK`. As we can
+see from the plots, the heater is driven rather eratically. Once the fall-back
+parameters have been applied, the system settles down again.
+
+In this specific example, we can see that $K_p$ is too large, causing the heater
+to be driven too hard. $K_i$ is working harder and harder to compensate, until
+the supervisor decides the accumulated error is too great and clamps down.
+
+We now have a stable test platform to experiment on. We can experiment with PID
+parameters, without having to worry so much about the system becoming unstable.
+The supervisor works nicely and the graphs give insight in what is going on
+inside the controller. From here, we should start actually tuning.
+
 ---
 ## Auto-tuner
 With the supervisor ready to take over in case the control loop becomes unstable,
 we turn out attention to the auto tuning. As in the paper, we will use
-[Deep Deterministic Policy Gradients (DDPG)](https://www.youtube.com/watch?v=6Yd5WnYls_Y).
+[Deep Deterministic Policy Gradients (DDPG)](https://www.youtube.com/watch?v=6Yd5WnYls_Y),
+adding a simple priming system to make sure the agent starts with a helpful set
+of example data in its replay buffer.
 
 The code is largely copied from our own 
 [PyTorch DDPG Tutorial Implementation](https://github.com/kjkoster/ddpg-continuous-tutorial),
@@ -297,3 +342,23 @@ by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
 
 [DDPG and TD3 (RLVS 2021 version)](https://www.youtube.com/watch?v=0D6a0a1HTtc) by [Olivier Sigaud](https://www.youtube.com/@OlivierSigaud)
+
+You can run the agent as follows. The agent primes the replay buffer with random
+and with fall-back-related PID gain values. This will take almost two days (some
+41 hours) and _after that_ DDPG needs time to learn. Useful results should take
+a week or so of time (sorry).
+
+```sh
+(venv) $ python autotuning_supervised_plant_control.py
+```
+
+Once running, you can plot the progression over the episodes using the plotting
+script.
+
+```sh
+(venv) $ python python plot_learning.py episodes/*.parquet
+```
+
+You can then see the progress of your agent in the generated files
+`learning.png` and learning3d.png`.
+
