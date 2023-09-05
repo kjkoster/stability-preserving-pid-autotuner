@@ -46,6 +46,7 @@ for file in files:
                        last_step[COL_STATE]]
     learning.loc[len(learning)] = episode_summary
 
+plt.rcParams['lines.linewidth'] = 0.8
 fig, axes = plt.subplot_mosaic("EEE;PPP;III;DDD;xyz;klm;uvw", figsize=(15,15))
 
 axes['E'].plot(learning[COL_TIME], learning[COL_ERROR],     color='orange',    label='episode error $RR_T$')
