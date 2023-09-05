@@ -72,3 +72,20 @@ Keep in mind that the number of cycles I run is very low, due to me programming 
 
 Overall, I am quite content with this priming idea, and I will keep it in.
 
+## 2023-09-01: Smaller Search Space
+
+Just to see what happens, I reduced the search space for the agent to about a quarter of its original size. You can see the comparison in the graphs below. On the left, I have the original search space. On the right I have the smaller search space.
+
+<p align="center" width="100%">
+    <img width="30%" src="../images/priming-done.png">
+    <img width="30%" src="../images/priming-smaller-searchspace.png">
+</p>
+
+While it may look like this is an improvement, it really is just the same result: the agent is wandering around the search space a little and accidentally blunders into working parameter sets. When the search space is smaller, the accidents are more frequent.
+
+If anything, this shows how little of the search space is actually explored by the agent in the roughy 1000 episodes that I run this system for. If I want any sort of predictability, the agent would probably need to have seen most of the search space.
+
+If you look at the bottom graphs, you can see that a simple regression would probably have the agent zoom in on the optimal parameter set in no time at all. If you decide to half-automate tuning, just run your controller under the supervisor, run the random agent for a while to determine the cluster of usable values. Next restrict the search space to the cluster and then re-run the random agent. Finally do a regression and that is your optimal value. Repeat every month or two and you don't need machine learning at all.
+
+I will stick with the larger search space, just because it is more difficult for the agent to achieve good results. On to the next experiment.
+
