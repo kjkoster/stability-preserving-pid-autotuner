@@ -38,8 +38,6 @@ class SupervisedPlantControl:
         self.plant.set_pid_tunings(pid_tunings, "episode starts")
 
         for t in range(len(setpoints)):
-            self.plant.sleep_until_cycle_starts()
-
             step_data = self.plant.step(t / self.sample_rate, setpoints[t],
                                         R_bmk=self.R_bmk, episode_state=episode_state)
             results.loc[len(results)] = step_data
