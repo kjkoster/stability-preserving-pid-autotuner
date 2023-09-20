@@ -6,13 +6,12 @@
 # tunings for it.
 #
 import numpy as np
-from ddpg_torch import Agent
 from datetime import datetime
 
-from episodes import T, SAMPLE_RATE, EPISODE_LENGTH, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE, COL_ERROR, save_and_plot_episode
-from ddpg_torch import OUActionNoise
+from ddpg_torch import Agent
 from plant_control import PlantControl
 from supervised_plant_control import SupervisedPlantControl
+from episodes import T, SAMPLE_RATE, EPISODE_LENGTH, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE, COL_ERROR, save_and_plot_episode
 
 IS_HARDWARE = False
 
@@ -31,18 +30,31 @@ def map_action_to_pid_tunings(action):
     return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
 
 
+#
+# An agent that generates PID gains in the plus or minus 10% range from given
+# PID tunings. This agent is used to find plausible gain values, close to the
+# known-good values.
+#
 class NoisyAgent:
-    def __init__(self, n_actions, sigma):
-        self.noise = OUActionNoise(np.zeros(n_actions), sigma)
+    def __init__(self, pid_tunings, map_gains):
+        self.pid_tunings = pid_tunings
+        self.map_gains = map_gains
 
-    def map_pid_tunings_to_action(self, pid_tunings):
-        return [pid_tunings[0] / MAP_GAINS[0], pid_tunings[1] / MAP_GAINS[1], pid_tunings[2] / MAP_GAINS[2]]
+    def map_pid_tunings_to_action(self, proposed_tunings):
+        return [proposed_tunings[0] / self.map_gains[0],
+                proposed_tunings[1] / self.map_gains[1],
+                proposed_tunings[2] / self.map_gains[2]]
 
     def choose_action(self):
-        pid_tunings = FALLBACK_PID_TUNINGS + self.noise()
-        return self.map_pid_tunings_to_action(pid_tunings)
+        proposed_tunings = [np.random.uniform(self.pid_tunings[0] * 0.9, self.pid_tunings[0] * 1.1),
+                            np.random.uniform(self.pid_tunings[1] * 0.9, self.pid_tunings[1] * 1.1),
+                            np.random.uniform(self.pid_tunings[2] * 0.9, self.pid_tunings[2] * 1.1)]
+        return self.map_pid_tunings_to_action(proposed_tunings)
 
 
+#
+# A completely random agent. It just picks values anywhere in the search space.
+#
 class RandomAgent:
     def __init__(self, n_actions):
         self.n_actions = n_actions
@@ -80,7 +92,7 @@ if __name__ == "__main__":
 
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
 
-    noisy_agent = NoisyAgent(N_ACTIONS, sigma=0.5)
+    noisy_agent = NoisyAgent(FALLBACK_PID_TUNINGS, MAP_GAINS)
     random_agent = RandomAgent(N_ACTIONS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
                   batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
