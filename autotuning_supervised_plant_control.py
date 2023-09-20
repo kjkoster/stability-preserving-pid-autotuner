@@ -31,11 +31,16 @@ def map_action_to_pid_tunings(action):
     return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
 
 
-noise = OUActionNoise(np.zeros(N_ACTIONS))
-def noisy_fall_back_tunings():
-    noisy_gains = FALLBACK_PID_TUNINGS + noise()
-    return [noisy_gains[0] / MAP_GAINS[0], noisy_gains[1] / MAP_GAINS[1], noisy_gains[2] / MAP_GAINS[2]], \
-           (noisy_gains[0], noisy_gains[1], noisy_gains[2])
+class NoisyAgent:
+    def __init__(self, n_actions, sigma):
+        self.noise = OUActionNoise(np.zeros(n_actions), sigma)
+
+    def map_pid_tunings_to_action(self, pid_tunings):
+        return [pid_tunings[0] / MAP_GAINS[0], pid_tunings[1] / MAP_GAINS[1], pid_tunings[2] / MAP_GAINS[2]]
+
+    def choose_action(self):
+        pid_tunings = FALLBACK_PID_TUNINGS + self.noise()
+        return self.map_pid_tunings_to_action(pid_tunings)
 
 
 class RandomAgent:
@@ -75,6 +80,7 @@ if __name__ == "__main__":
 
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
 
+    noisy_agent = NoisyAgent(N_ACTIONS, sigma=0.5)
     random_agent = RandomAgent(N_ACTIONS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
                   batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
@@ -87,13 +93,13 @@ if __name__ == "__main__":
     while True:
         episode_nr += 1
         if episode_nr <= 250:
-            action, pid_tunings = noisy_fall_back_tunings()
+            action = noisy_agent.choose_action()
         elif episode_nr <= 500:
             action = random_agent.choose_action()
-            pid_tunings = map_action_to_pid_tunings(action)
         else:
             action = agent.choose_action(observation)
-            pid_tunings = map_action_to_pid_tunings(action)
+
+        pid_tunings = map_action_to_pid_tunings(action)
 
         episode, done = supervised_plant_control.step(SET_POINT)
         if done:
