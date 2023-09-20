@@ -63,8 +63,7 @@ def evaluate(episode):
 # auto-tuner.
 #
 if __name__ == "__main__":
-    plant_control = PlantControl(IS_HARDWARE)
-    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
+    plant_control = PlantControl(IS_HARDWARE, FALLBACK_PID_TUNINGS)
 
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
 

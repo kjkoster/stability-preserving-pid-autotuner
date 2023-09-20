@@ -72,8 +72,7 @@ class SupervisedPlantControl:
 # and PID tunings and run episodes until the program is stopped.
 #
 if __name__ == "__main__":
-    plant_control = PlantControl(IS_HARDWARE)
-    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts") # XXX push into plant_control...
+    plant_control = PlantControl(IS_HARDWARE, FALLBACK_PID_TUNINGS)
 
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
     supervised_plant_control.set_pid_tunings(PID_TUNINGS)
