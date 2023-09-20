@@ -6,7 +6,6 @@
 # loop to known-stable (though suboptimal) PID parameters.
 #
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
 
@@ -25,32 +24,47 @@ FALLBACK_PID_TUNINGS = (20.0, 0.1, 0.01)
 class SupervisedPlantControl:
     def __init__(self, plant, R_bmk, fallback_pid_tunings):
         self.plant = plant
-        self.sample_rate = plant.sample_rate
 
+        self.t = EPISODE_LENGTH # so we start a new episode on the next step
+
+        self.episode_state = STATE_NORMAL
         self.R_bmk = R_bmk
+
         self.fallback_pid_tunings = fallback_pid_tunings
+        self.proposed_pid_tunings = fallback_pid_tunings
 
 
-    def episode(self, setpoints, pid_tunings):
-        results = pd.DataFrame(columns=EPISODE_COLUMNS)
+    def start_episode(self):
+        self.t = 0
+        self.results = pd.DataFrame(columns=EPISODE_COLUMNS)
+        self.episode_state = STATE_NORMAL
+        self.plant.set_pid_tunings(self.proposed_pid_tunings, "episode starts")
 
-        episode_state = STATE_NORMAL
-        self.plant.set_pid_tunings(pid_tunings, "episode starts")
 
-        for t in range(len(setpoints)):
-            step_data = self.plant.step(t / self.sample_rate, setpoints[t],
-                                        R_bmk=self.R_bmk, episode_state=episode_state)
-            results.loc[len(results)] = step_data
+    # note that these tunings will only be applied at the start of an episode;
+    # i.e. when $t$ is 0.
+    def set_pid_tunings(self, pid_tunings):
+        self.proposed_pid_tunings = pid_tunings
 
-            # in fallback state we just sit the episode out
-            running_error = (results[COL_ERROR]**2).sum()
-            if episode_state != STATE_FALLBACK and \
-                    running_error > self.R_bmk:
-                episode_state = STATE_FALLBACK
-                self.plant.set_pid_tunings(self.fallback_pid_tunings,
-                                           f"running error {running_error:.1f} exceeds benchmark error {self.R_bmk:.1f}")
 
-        return results
+    def step(self, setpoint):
+        if self.t == EPISODE_LENGTH:
+            self.start_episode()
+        else:
+            self.t += 1
+
+        step_data = self.plant.step(self.t / SAMPLE_RATE, setpoint,
+                                    R_bmk=self.R_bmk, episode_state=self.episode_state)
+        self.results.loc[len(self.results)] = step_data
+
+        # in fallback state we just sit the episode out
+        running_error = (self.results[COL_ERROR]**2).sum()
+        if self.episode_state != STATE_FALLBACK and running_error > self.R_bmk:
+            self.episode_state = STATE_FALLBACK
+            self.plant.set_pid_tunings(self.fallback_pid_tunings,
+                                       f"running error {running_error:.1f} exceeds benchmark error {self.R_bmk:.1f}")
+
+        return self.results, self.t == EPISODE_LENGTH
 
 
 #
@@ -58,16 +72,16 @@ class SupervisedPlantControl:
 # and PID tunings and run episodes until the program is stopped.
 #
 if __name__ == "__main__":
-    setpoints = np.zeros(EPISODE_LENGTH)
-    setpoints[:] = SET_POINT
+    plant_control = PlantControl(IS_HARDWARE)
+    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts") # XXX push into plant_control...
 
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
-    while True:
-        timestamp_utc = datetime.utcnow()
-        print(f"generating episode {timestamp_utc.isoformat()}...")
+    supervised_plant_control.set_pid_tunings(PID_TUNINGS)
 
-        episode = supervised_plant_control.episode(setpoints, PID_TUNINGS)
-        save_and_plot_episode(timestamp_utc, episode)
+    while True:
+        episode, done = supervised_plant_control.step(SET_POINT)
+        if done:
+            timestamp_utc = datetime.utcnow() # XXX push into episode
+            print(f"saving episode {timestamp_utc.isoformat()}...")
+            save_and_plot_episode(timestamp_utc, episode)
 

@@ -47,9 +47,15 @@ class RandomAgent(object):
 
 
 def evaluate(episode):
-    return episode.iloc[range(0, T, int(T/12))][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].values.reshape(24, 1).flatten().tolist() , \
-           -(episode[COL_ERROR]**2).sum()
+    if len(episode) < 12:
+        observed_data = episode[[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].reindex(range(12)).fillna(0.0)
+    else:
+        observed_data = episode.iloc[np.linspace(0, len(episode), 12, endpoint=False)][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]]
+    observed_data = observed_data.values.flatten().tolist()
 
+    error = -(episode[COL_ERROR]**2).sum()
+
+    return observed_data, error
 
 #
 # The main driver. Create a supervised plan control and an agent. Prime the
@@ -57,48 +63,40 @@ def evaluate(episode):
 # auto-tuner.
 #
 if __name__ == "__main__":
-    setpoints = np.zeros(EPISODE_LENGTH)
-    setpoints[:] = SET_POINT
-
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
+    plant_control = PlantControl(IS_HARDWARE)
     plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
+
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
+
+    random_agent = RandomAgent(N_ACTIONS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
                   batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
 
-    # knowing nothing, we just start with the fallback tunings
-    pid_tunings = FALLBACK_PID_TUNINGS
-
-    # run a first episode, we need a first episode to prime the learning cycle
-    timestamp_utc = datetime.utcnow()
-    print(f"generating priming episode {timestamp_utc.isoformat()}...")
-    episode = supervised_plant_control.episode(setpoints, pid_tunings)
+    print("generating priming step...")
+    episode, _ = supervised_plant_control.step(SET_POINT)
     observation, _ = evaluate(episode)
 
-    random_agent = RandomAgent(N_ACTIONS)
-
-    iteration_nr = 0
+    episode_nr = 0
     while True:
-        timestamp_utc = datetime.utcnow()
-        print(f"generating episode {timestamp_utc.isoformat()}...")
-
-        if iteration_nr < 250:
+        episode_nr += 1
+        if episode_nr <= 250:
             action, pid_tunings = noisy_fall_back_tunings()
-        elif iteration_nr < 500:
+        elif episode_nr <= 500:
             action = random_agent.choose_action()
             pid_tunings = map_action_to_pid_tunings(action)
         else:
             action = agent.choose_action(observation)
             pid_tunings = map_action_to_pid_tunings(action)
-        iteration_nr += 1
 
-        episode = supervised_plant_control.episode(setpoints, pid_tunings)
-        save_and_plot_episode(timestamp_utc, episode)
+        episode, done = supervised_plant_control.step(SET_POINT)
+        if done:
+            timestamp_utc = datetime.utcnow()
+            print(f"saving episode {timestamp_utc.isoformat()}...")
+            save_and_plot_episode(timestamp_utc, episode)
+
         new_state, reward = evaluate(episode)
 
-        print(f"action {action}/{pid_tunings} yielded reward {reward}")
-        # we treat each episode as done, otherwise the system won't learn at all
-        agent.remember(observation, action, reward, new_state, True)
+        agent.remember(observation, action, reward, new_state, done)
         agent.learn()
 
         observation = new_state

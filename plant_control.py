@@ -26,17 +26,16 @@ SET_POINT = 23.0
 
 
 class PlantControl:
-    def __init__(self, is_hardware, sample_rate):
+    def __init__(self, is_hardware):
         TCLab = tclab.setup(connected=is_hardware)
         self.plant = TCLab()
         self.y_t_prev = self.plant.T1
 
         self.pid = PID()
 
-        self.sample_rate = sample_rate
-        self.cycle_time = 1.0 / self.sample_rate
+        self.cycle_time = 1.0 / SAMPLE_RATE
         self.pid.sample_time = self.cycle_time
-        print(f"sample rate is {self.sample_rate} Hz, cycle time is {self.pid.sample_time} second")
+        print(f"sample rate is {SAMPLE_RATE} Hz, cycle time is {self.pid.sample_time} second")
 
         self.previous_time = None
 
@@ -115,7 +114,7 @@ if __name__ == "__main__":
     setpoints = np.zeros(EPISODE_LENGTH)
     setpoints[:] = SET_POINT
 
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
+    plant_control = PlantControl(IS_HARDWARE)
     plant_control.set_pid_tunings(PID_TUNINGS, "program starts")
 
     while True:
