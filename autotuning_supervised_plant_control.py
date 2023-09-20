@@ -38,7 +38,7 @@ def noisy_fall_back_tunings():
            (noisy_gains[0], noisy_gains[1], noisy_gains[2])
 
 
-class RandomAgent(object):
+class RandomAgent:
     def __init__(self, n_actions):
         self.n_actions = n_actions
 
@@ -46,6 +46,14 @@ class RandomAgent(object):
         return np.random.rand(self.n_actions)
 
 
+#
+# In the evaluation we try to reduce the dimensions of the input data to a
+# reasonable level. We try to get down to 24 features, because more just makes
+# for an insanely large search space.
+#
+# If we don't have enough data to generate the 12*2=24 observations, we zero-pad
+# the data.
+#
 def evaluate(episode):
     if len(episode) < 12:
         observed_data = episode[[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].reindex(range(12)).fillna(0.0)

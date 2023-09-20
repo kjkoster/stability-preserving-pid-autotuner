@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-class OUActionNoise(object):
+class OUActionNoise:
     def __init__(self, mu, sigma=0.15, theta=0.2, dt=1e-2):
         self.mu = mu
         self.sigma = sigma
@@ -21,7 +21,7 @@ class OUActionNoise(object):
         return x
 
 
-class ReplayBuffer(object):
+class ReplayBuffer:
     def __init__(self, max_size, input_shape, n_actions):
         self.mem_size = max_size
         self.mem_cntr = 0
@@ -166,7 +166,7 @@ class ActorNetwork(nn.Module):
         print(f"loading {checkpoint_file}")
 
 
-class Agent(object):
+class Agent:
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99, n_actions=2,
                  max_size=1000000, layer1_size=400, layer2_size=300, batch_size=64):
         self.gamma = gamma
