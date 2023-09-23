@@ -26,8 +26,22 @@ MAP_GAINS = [500.0, 50.0, 5.0]
 N_ACTIONS = 3
 BATCH_SIZE = 64
 
+#
+# Due to the action and PID tunings being different data types, we have to be
+# able to map back and forth between them. Luckily for us, it is a simple
+# mapping. We mostly have to map from a chosen action to PID gain values.
+#
 def map_action_to_pid_tunings(action):
     return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
+
+
+#
+# In some cases we don't choose an action, but we choose the PID tunings. For
+# simplicity, we always map chosen PID values back to an action, making the code
+# more uniform.
+#
+def map_pid_tunings_to_action(tunings):
+        return [tunings[0] / MAP_GAINS[0], tunings[1] / MAP_GAINS[1], tunings[2] / MAP_GAINS[2]]
 
 
 #
@@ -36,20 +50,14 @@ def map_action_to_pid_tunings(action):
 # known-good values.
 #
 class NoisyAgent:
-    def __init__(self, pid_tunings, map_gains):
+    def __init__(self, pid_tunings):
         self.pid_tunings = pid_tunings
-        self.map_gains = map_gains
-
-    def map_pid_tunings_to_action(self, proposed_tunings):
-        return [proposed_tunings[0] / self.map_gains[0],
-                proposed_tunings[1] / self.map_gains[1],
-                proposed_tunings[2] / self.map_gains[2]]
 
     def choose_action(self):
         proposed_tunings = [np.random.uniform(self.pid_tunings[0] * 0.9, self.pid_tunings[0] * 1.1),
                             np.random.uniform(self.pid_tunings[1] * 0.9, self.pid_tunings[1] * 1.1),
                             np.random.uniform(self.pid_tunings[2] * 0.9, self.pid_tunings[2] * 1.1)]
-        return self.map_pid_tunings_to_action(proposed_tunings)
+        return map_pid_tunings_to_action(proposed_tunings)
 
 
 #
@@ -68,13 +76,15 @@ class RandomAgent:
 # reasonable level. We try to get down to 24 features, because more just makes
 # for an insanely large search space.
 #
-# If we don't have enough data to generate the 12*2=24 observations, we zero-pad
-# the data.
+# If we don't have enough data to generate the 12*2=24 observations, we
+# right-zero-pad the data.
 #
 def evaluate(episode):
     if len(episode) < 12:
+        # either use what we have and zero-pad...
         observed_data = episode[[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].reindex(range(12)).fillna(0.0)
     else:
+        # or take a 'trajectory', as the paper calls it.
         observed_data = episode.iloc[np.linspace(0, len(episode), 12, endpoint=False)][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]]
     observed_data = observed_data.values.flatten().tolist()
 
@@ -92,32 +102,37 @@ if __name__ == "__main__":
 
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
 
-    noisy_agent = NoisyAgent(FALLBACK_PID_TUNINGS, MAP_GAINS)
+    noisy_agent = NoisyAgent(FALLBACK_PID_TUNINGS)
     random_agent = RandomAgent(N_ACTIONS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
                   batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
 
     print("generating priming step...")
+    pid_tunings = FALLBACK_PID_TUNINGS
+    action = map_pid_tunings_to_action(pid_tunings)
     episode, _ = supervised_plant_control.step(SET_POINT)
     observation, _ = evaluate(episode)
 
     episode_nr = 0
     while True:
-        episode_nr += 1
-        if episode_nr <= 250:
-            action = noisy_agent.choose_action()
-        elif episode_nr <= 500:
-            action = random_agent.choose_action()
-        else:
-            action = agent.choose_action(observation)
-
-        pid_tunings = map_action_to_pid_tunings(action)
-
         episode, done = supervised_plant_control.step(SET_POINT)
+
         if done:
             timestamp_utc = datetime.utcnow()
             print(f"saving episode {timestamp_utc.isoformat()}...")
             save_and_plot_episode(timestamp_utc, episode)
+
+            if episode_nr < 250:
+                action = noisy_agent.choose_action()
+            elif episode_nr < 500:
+                action = random_agent.choose_action()
+            else:
+                action = agent.choose_action(observation)
+
+            pid_tunings = map_action_to_pid_tunings(action)
+            supervised_plant_control.set_pid_tunings(pid_tunings)
+
+            episode_nr += 1
 
         new_state, reward = evaluate(episode)
 
