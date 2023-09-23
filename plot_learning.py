@@ -127,22 +127,31 @@ axes['m'].set_ylabel(COL_KP)
 
 axes['u'].scatter(only_proposed[COL_KP_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
 axes['u'].scatter(only_applied[COL_KP_END], only_applied[COL_ERROR],   color='b')
+min_err_kp = only_applied[COL_KP_END][only_applied[COL_ERROR].idxmin()]
+axes['u'].axvline(min_err_kp, color='g', label=f"$K_p$: {min_err_kp}")
 axes['u'].set_xlim((min_p, max_p))
 axes['u'].set_xlabel(COL_KP)
 axes['u'].set_ylim((min_e, max_e))
 axes['u'].set_ylabel(COL_ERROR)
+axes['u'].legend(loc='upper left')
 
 axes['v'].scatter(only_proposed[COL_KI_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
 axes['v'].scatter(only_applied[COL_KI_END], only_applied[COL_ERROR],   color='b')
+min_err_ki = only_applied[COL_KI_END][only_applied[COL_ERROR].idxmin()]
+axes['v'].axvline(min_err_ki, color='g', label=f"$K_i$: {min_err_ki}")
 axes['v'].set_xlim((min_i, max_i))
 axes['v'].set_ylim((min_e, max_e))
 axes['v'].set_xlabel(COL_KI)
+axes['v'].legend(loc='upper left')
 
 axes['w'].scatter(only_proposed[COL_KD_END], only_proposed[COL_ERROR], color='r', alpha=0.2)
 axes['w'].scatter(only_applied[COL_KD_END], only_applied[COL_ERROR],   color='b')
+min_err_kd = only_applied[COL_KD_END][only_applied[COL_ERROR].idxmin()]
+axes['w'].axvline(min_err_kd, color='g', label=f"$K_d$: {min_err_kd}")
 axes['w'].set_xlim((min_d, max_d))
 axes['w'].set_ylim((min_e, max_e))
 axes['w'].set_xlabel(COL_KD)
+axes['w'].legend(loc='upper left')
 
 # ---
 
