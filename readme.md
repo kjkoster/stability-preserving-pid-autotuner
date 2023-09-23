@@ -147,6 +147,22 @@ All this to say that we need a scaling function that maps the chosen action
 values onto the gain values. We do this by multiplying each gain value
 separately, so that we can have different values for each gain.
 
+### The Agent's Observation Space
+
+The agent's observation acts as input features to the neural networks. The size
+of the observation space is an important factor in the number of trainable
+parameters, which in turn reflects on how long it takes to train the agent.
+Feature reduction is one way to improve learning times.
+
+In the paper, the authors talk take the "_trajectory_" of the process variable
+and control variable values, which we will do as well. In our code we take the
+trajectory by selecting 12 evenly spaced points on the episode's values for the
+process and control variables. Note that the set-point nor the error is part of
+the observation space. These factor into the process and control variables. If
+we don't have enough values, we simply zero-pad these on the right to ensure we
+always have precisely 24 values.
+
+
 
 ---
 ## Virtual Environment and Dependencies
@@ -284,9 +300,11 @@ machine is shown below.
 This is a bit confusing for three reasons: first, the _name_ suggests $RR(t)$ is
 the running reward, but the actual use is that of running error. Second, we
 compare a _running_ total against a _static_ benchmark. Third, in reinforcement
-learning, using a reward is more common than using loss. In the implementation
-we chose to use the same variable names, in spite of them being a little
-confusing. Apologies if that is confusing.
+learning, using a reward is more common than using loss. Here we call it a
+reward, but it is really just the inverse of the squared error, i.e. the inverse
+of the loss. In our implementation we chose to use the same naming as in the
+paper, in spite of them being a little confusing. Apologies if that is
+confusing.
 
 ### Running Supervised Plant Control
 Here is how to run the supervised plant control, with the set-point of
@@ -313,9 +331,10 @@ graph where the supervisor had to step in and revert to known-stable PID values.
 </p>
 
 In that plot, we can see the supervisor kick in around the $t \approx 230$ mark.
-The beige area signifies that the supervisor is in `STATE_FALLBACK`. As we can
-see from the plots, the heater is driven rather eratically. Once the fall-back
-parameters have been applied, the system settles down again.
+The beige area signifies that the supervisor is in `STATE_FALLBACK` for the
+remainder of the episode. As we can see from the plots, the heater is driven
+rather eratically. Once the fall-back parameters have been applied, the system
+settles down again.
 
 In this specific example, we can see that $K_p$ is too large, causing the heater
 to be driven too hard. $K_i$ is working harder and harder to compensate, until
@@ -342,6 +361,32 @@ by
 [Machine Learning with Phil](https://www.youtube.com/@MachineLearningwithPhil).
 
 [DDPG and TD3 (RLVS 2021 version)](https://www.youtube.com/watch?v=0D6a0a1HTtc) by [Olivier Sigaud](https://www.youtube.com/@OlivierSigaud)
+
+### Priming
+
+To give the agent a head start, we first run through a priming stage. Here we
+try to identify what good and bad values are for the PID gains. If nothing else,
+this helps getting a sense of where the cluster of optimal PID values can be
+found.
+
+The priming cycle takes advantage of the decoupling of the agent from the
+supervisor. As the program starts, the driver simply uses three separate agents
+to generate PID values. For the first 250 episodes it relies on a noisy agent,
+which generates PID gains that are close to the fall-back values. The next 250
+episodes are handled by the random agent. The random agent picks random values
+in the entire search space. For the remainder of the episodes, the driver
+program relies only on the DDPG agent to generate PID values.
+
+<p align="center" width="100%">
+    <img width="80%" src="images/priming-agents.png"> 
+</p>
+
+Regardless of which agent proposed the PID gains, the episode results are fed
+into the DDPG agent's memory to learn from. This means that by the time the DDPG
+agent actually comes on-line, it has already learnt from 500 episodes, both good
+and bad, giving it a head start.
+
+### Running the DDPG Agent Optimized, Supervised Plant Control
 
 You can run the agent as follows. The agent primes the replay buffer with random
 and with fall-back-related PID gain values. This will take almost two days (some

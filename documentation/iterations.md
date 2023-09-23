@@ -89,3 +89,9 @@ If you look at the bottom graphs, you can see that a simple regression would pro
 
 I will stick with the larger search space, just because it is more difficult for the agent to achieve good results. On to the next experiment.
 
+## 2023-09-23: Stepwise Learning
+
+Up until now I only ran the learning cycle at the end of each 5-minute episode. This means that the agent cannot learn from the 299 intermediate episode steps. This is not how all the other implementations work. In this iteration I reworked the code to make the agent learn from the intermediate episodes too.
+
+The DDPG agent is set up to work in this fashion. The learning operation actually bahaves differently with the episode is marked as `done`.
+
