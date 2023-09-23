@@ -26,19 +26,19 @@ SET_POINT = 23.0
 
 
 class PlantControl:
-    def __init__(self, is_hardware, sample_rate):
+    def __init__(self, is_hardware, starting_pid_tunings):
         TCLab = tclab.setup(connected=is_hardware)
         self.plant = TCLab()
         self.y_t_prev = self.plant.T1
+        self.previous_time = None
 
         self.pid = PID()
 
-        self.sample_rate = sample_rate
-        self.cycle_time = 1.0 / self.sample_rate
+        self.cycle_time = 1.0 / SAMPLE_RATE
         self.pid.sample_time = self.cycle_time
-        print(f"sample rate is {self.sample_rate} Hz, cycle time is {self.pid.sample_time} second")
+        print(f"sample rate is {SAMPLE_RATE} Hz, cycle time is {self.pid.sample_time} second")
 
-        self.previous_time = None
+        self.set_pid_tunings(starting_pid_tunings, "program starts")
 
 
     def set_pid_tunings(self, pid_tunings, reason):
@@ -50,7 +50,24 @@ class PlantControl:
             self.pid.reset()
 
 
+    def sleep_until_cycle_starts(self):
+        if self.previous_time is None:
+            self.previous_time = time.time()
+
+        current_time = time.time()
+        while current_time - self.previous_time < self.cycle_time:
+            time.sleep(0.001)
+            current_time = time.time()
+
+        if current_time - self.previous_time > self.cycle_time * 1.01:
+            print(f"cycle time {current_time - self.previous_time:0.3f} exceeds expected time {self.cycle_time:0.3f}")
+        self.previous_time = current_time
+
+
+    # note that `step()` blocks until the next cycle, to ensure the timings are good
     def step(self, t, r_t, R_bmk=0.0, u2_t=0.0, episode_state=STATE_NORMAL):
+        self.sleep_until_cycle_starts()
+
         self.pid.setpoint = r_t
         u_t_uncapped = self.pid(self.y_t_prev)
 
@@ -73,20 +90,6 @@ class PlantControl:
                 u_t_uncapped, u_t, y_t, u2_t, y2_t,
                 episode_state]
 
-
-    def sleep_until_cycle_starts(self):
-        if self.previous_time is None:
-            self.previous_time = time.time()
-
-        current_time = time.time()
-        while current_time - self.previous_time < self.cycle_time:
-            time.sleep(0.001)
-            current_time = time.time()
-
-        if current_time - self.previous_time > self.cycle_time * 1.01:
-            print(f"cycle time {current_time - self.previous_time:0.3f} exceeds expected time {self.cycle_time:0.3f}")
-        self.previous_time = current_time
-
 #
 # The remainder of this file is code to try out the plant control. We will reuse
 # the class above for the other control loop experiments. The code below is just
@@ -99,8 +102,6 @@ class PlantControl:
 def run_episode(plant_control, setpoints):
     results = pd.DataFrame(columns=EPISODE_COLUMNS)
     for t in range(len(setpoints)):
-        plant_control.sleep_until_cycle_starts()
-
         step_data = plant_control.step(t / SAMPLE_RATE, setpoints[t])
         results.loc[len(results)] = step_data
 
@@ -114,8 +115,7 @@ if __name__ == "__main__":
     setpoints = np.zeros(EPISODE_LENGTH)
     setpoints[:] = SET_POINT
 
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    plant_control.set_pid_tunings(PID_TUNINGS, "program starts")
+    plant_control = PlantControl(IS_HARDWARE, PID_TUNINGS)
 
     while True:
         timestamp_utc = datetime.utcnow()

@@ -6,13 +6,12 @@
 # tunings for it.
 #
 import numpy as np
-from ddpg_torch import Agent
 from datetime import datetime
 
-from episodes import T, SAMPLE_RATE, EPISODE_LENGTH, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE, COL_ERROR, save_and_plot_episode
-from ddpg_torch import OUActionNoise
+from ddpg_torch import Agent
 from plant_control import PlantControl
 from supervised_plant_control import SupervisedPlantControl
+from episodes import T, SAMPLE_RATE, EPISODE_LENGTH, COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE, COL_ERROR, save_and_plot_episode
 
 IS_HARDWARE = False
 
@@ -27,18 +26,44 @@ MAP_GAINS = [500.0, 50.0, 5.0]
 N_ACTIONS = 3
 BATCH_SIZE = 64
 
+#
+# Due to the action and PID tunings being different data types, we have to be
+# able to map back and forth between them. Luckily for us, it is a simple
+# mapping. We mostly have to map from a chosen action to PID gain values.
+#
 def map_action_to_pid_tunings(action):
     return (action[0] * MAP_GAINS[0], action[1] * MAP_GAINS[1], action[2] * MAP_GAINS[2])
 
 
-noise = OUActionNoise(np.zeros(N_ACTIONS))
-def noisy_fall_back_tunings():
-    noisy_gains = FALLBACK_PID_TUNINGS + noise()
-    return [noisy_gains[0] / MAP_GAINS[0], noisy_gains[1] / MAP_GAINS[1], noisy_gains[2] / MAP_GAINS[2]], \
-           (noisy_gains[0], noisy_gains[1], noisy_gains[2])
+#
+# In some cases we don't choose an action, but we choose the PID tunings. For
+# simplicity, we always map chosen PID values back to an action, making the code
+# more uniform.
+#
+def map_pid_tunings_to_action(tunings):
+        return [tunings[0] / MAP_GAINS[0], tunings[1] / MAP_GAINS[1], tunings[2] / MAP_GAINS[2]]
 
 
-class RandomAgent(object):
+#
+# An agent that generates PID gains in the plus or minus 10% range from given
+# PID tunings. This agent is used to find plausible gain values, close to the
+# known-good values.
+#
+class NoisyAgent:
+    def __init__(self, pid_tunings):
+        self.pid_tunings = pid_tunings
+
+    def choose_action(self):
+        proposed_tunings = [np.random.uniform(self.pid_tunings[0] * 0.9, self.pid_tunings[0] * 1.1),
+                            np.random.uniform(self.pid_tunings[1] * 0.9, self.pid_tunings[1] * 1.1),
+                            np.random.uniform(self.pid_tunings[2] * 0.9, self.pid_tunings[2] * 1.1)]
+        return map_pid_tunings_to_action(proposed_tunings)
+
+
+#
+# A completely random agent. It just picks values anywhere in the search space.
+#
+class RandomAgent:
     def __init__(self, n_actions):
         self.n_actions = n_actions
 
@@ -46,10 +71,26 @@ class RandomAgent(object):
         return np.random.rand(self.n_actions)
 
 
+#
+# In the evaluation we try to reduce the dimensions of the input data to a
+# reasonable level. We try to get down to 24 features, because more just makes
+# for an insanely large search space.
+#
+# If we don't have enough data to generate the 12*2=24 observations, we
+# right-zero-pad the data.
+#
 def evaluate(episode):
-    return episode.iloc[range(0, T, int(T/12))][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].values.reshape(24, 1).flatten().tolist() , \
-           -(episode[COL_ERROR]**2).sum()
+    if len(episode) < 12:
+        # either use what we have and zero-pad...
+        observed_data = episode[[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]].reindex(range(12)).fillna(0.0)
+    else:
+        # or take a 'trajectory', as the paper calls it.
+        observed_data = episode.iloc[np.linspace(0, len(episode), 12, endpoint=False)][[COL_CONTROL_VARIABLE, COL_PROCESS_VARIABLE]]
+    observed_data = observed_data.values.flatten().tolist()
 
+    error = -(episode[COL_ERROR]**2).sum()
+
+    return observed_data, error
 
 #
 # The main driver. Create a supervised plan control and an agent. Prime the
@@ -57,48 +98,45 @@ def evaluate(episode):
 # auto-tuner.
 #
 if __name__ == "__main__":
-    setpoints = np.zeros(EPISODE_LENGTH)
-    setpoints[:] = SET_POINT
+    plant_control = PlantControl(IS_HARDWARE, FALLBACK_PID_TUNINGS)
 
-    plant_control = PlantControl(IS_HARDWARE, SAMPLE_RATE)
-    plant_control.set_pid_tunings(FALLBACK_PID_TUNINGS, "program starts")
     supervised_plant_control = SupervisedPlantControl(plant_control, BENCHMARK_ERROR, FALLBACK_PID_TUNINGS)
+
+    noisy_agent = NoisyAgent(FALLBACK_PID_TUNINGS)
+    random_agent = RandomAgent(N_ACTIONS)
     agent = Agent(alpha=0.00005, beta=0.0005, input_dims=[24], tau=0.001,
                   batch_size=BATCH_SIZE, layer1_size=400, layer2_size=300, n_actions=N_ACTIONS, max_size=1_000_000)
 
-    # knowing nothing, we just start with the fallback tunings
+    print("generating priming step...")
     pid_tunings = FALLBACK_PID_TUNINGS
-
-    # run a first episode, we need a first episode to prime the learning cycle
-    timestamp_utc = datetime.utcnow()
-    print(f"generating priming episode {timestamp_utc.isoformat()}...")
-    episode = supervised_plant_control.episode(setpoints, pid_tunings)
+    action = map_pid_tunings_to_action(pid_tunings)
+    episode, _ = supervised_plant_control.step(SET_POINT)
     observation, _ = evaluate(episode)
 
-    random_agent = RandomAgent(N_ACTIONS)
-
-    iteration_nr = 0
+    episode_nr = 0
     while True:
-        timestamp_utc = datetime.utcnow()
-        print(f"generating episode {timestamp_utc.isoformat()}...")
+        episode, done = supervised_plant_control.step(SET_POINT)
 
-        if iteration_nr < 250:
-            action, pid_tunings = noisy_fall_back_tunings()
-        elif iteration_nr < 500:
-            action = random_agent.choose_action()
-            pid_tunings = map_action_to_pid_tunings(action)
-        else:
-            action = agent.choose_action(observation)
-            pid_tunings = map_action_to_pid_tunings(action)
-        iteration_nr += 1
+        if done:
+            timestamp_utc = datetime.utcnow()
+            print(f"saving episode {timestamp_utc.isoformat()}...")
+            save_and_plot_episode(timestamp_utc, episode)
 
-        episode = supervised_plant_control.episode(setpoints, pid_tunings)
-        save_and_plot_episode(timestamp_utc, episode)
+            if episode_nr < 250:
+                action = noisy_agent.choose_action()
+            elif episode_nr < 500:
+                action = random_agent.choose_action()
+            else:
+                action = agent.choose_action(observation)
+
+            pid_tunings = map_action_to_pid_tunings(action)
+            supervised_plant_control.set_pid_tunings(pid_tunings)
+
+            episode_nr += 1
+
         new_state, reward = evaluate(episode)
 
-        print(f"action {action}/{pid_tunings} yielded reward {reward}")
-        # we treat each episode as done, otherwise the system won't learn at all
-        agent.remember(observation, action, reward, new_state, True)
+        agent.remember(observation, action, reward, new_state, done)
         agent.learn()
 
         observation = new_state
