@@ -61,6 +61,16 @@ predictability over performance. Making a machine learning based auto-tuner
 solves none of these. If anything, the relative novelty of machine learning for
 this application will drive developers away from using it.
 
+Further, the paper makes the assumption that the set-point does not change. This
+way, the authors sidestep the hardest problem to solve in automatic PID tuning:
+tuning for the pulse response in case of a set-point change. From a machine
+learning perspective, what makes that problem particularly hard is how we would
+generate enough training and test data from a real life system. That would only
+be feasible by collecting observations from a large fleet of identical test
+systems, probably over a significant length of time. By the time you have enough
+data, the machine operators have gotten used to their machine's operation and
+would be reluctant to apply changes.
+
 So this tuner either works fully automatically and invisibly in the background,
 or it will never be used.
 
