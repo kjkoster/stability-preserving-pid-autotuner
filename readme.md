@@ -7,15 +7,20 @@ improvement. In many cases, PIDs are quickly hand-tuned and then left to
 operate under what is likely a suboptimal set of parameters. This makes tuning
 of PID controllers ripe for automation.
 
-There is another reason for continuous tuning. As a system ages, its behaviour
-may change over time. Materials wear and components may be swapped out for
-equivalent, but not identical, replacements. In an ideal world, all PID
-controllers on systems would be periodically re-tuned to compensate for changes
-in response of systems. If not periodically, then at least they should be
-retuned whenever components are replaced. In practice this rarely happens. Even
-the initial tuning is often done quickly and conservatively. A PID controller
-with a fixed set of parameters is not equipped to adapt to change in the plant's
-behaviour.
+There is another reason to look into automated tuning. A PID controller with a
+fixed set of parameters is not equipped to adapt to change in the plant's
+behaviour. As a system ages, its behaviour may change over time. Materials wear
+and components may be swapped out for equivalent, but not identical,
+replacements. In an ideal world, all PID controllers on systems would be
+periodically re-tuned to compensate for such changes. If not periodically, then
+at least they should be retuned whenever components are replaced. In practice
+this rarely happens. Even the initial tuning is often done quickly and
+conservatively.
+
+Reinforcement learning agents do not tire or get bored. They will follow subtle
+changes in plant response. Specifically in an environment where energy
+conservation is important, well tuned PID controllers can help eek out the last
+few drops of performance.
 
 This project explores a safe, stability-preserving, Reinforcement Learning (RL)
 based automatic PID controller tuning mechanism. The work of this project is
@@ -24,6 +29,12 @@ heavily based on
 by Ayub I. Lakhani, Myisha A. Chowdhury and Qiugang Lu, which is released under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). This work will be
 referred to as "the paper" throughout this project.
+
+Of the proposals in the paper, the most important is the proposal to have a
+supervisor process safeguard the stability of the system. Running with a
+terribly configured PID controller may destabilise a system, which is not what
+we want. In effect, the supervisor process allows us to experiment on a live
+system without the risk of instability.
 
 Note that we do not use machine learning to control the plant. Instead, we train
 an agent to provide optimal PID gain values and have a classical PID controller
@@ -37,14 +48,9 @@ scope of RL to PID tuning, the tuning process may be a black box, but the
 resultant plant controller is well understood and explainable.
 
 In cases where the reinforcement learning never converges or fails in some other
-way, humans can still go in, and take control and hand-tune the PID controller.
-This gives engineers the option to maintain automatic control under partial
-systems failure.
-
-Finally, reinforcement learning does not tire or get bored. It follows subtle
-changes in plant response. Specifically in an environment where energy
-conservation is important, well tuned PID controllers can help eek out the last
-few drops of performance.
+way, humans can still go in, take control and hand-tune the PID controller. This
+gives engineers the option to maintain automatic control under partial systems
+failure.
 
 ---
 ## Flawed Premise
